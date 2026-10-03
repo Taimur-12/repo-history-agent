@@ -27,11 +27,27 @@ def unwrap(result):
     return json.dumps(data, default=str)
 
 
+SPARSE_RESULTS = 2
+
+
+def sparse_note(query, count):
+    words = len(query.split())
+    if words > 1:
+        return (f"Only {count} result(s). Every word in the query must appear in a result, "
+                f"so each of your {words} words removes matches. Search again with a single "
+                f"identifier or fewer words before concluding anything.")
+    return (f"Only {count} result(s) for this single word. Try a different identifier, "
+            f"or a different kind, before concluding anything.")
+
+
 @tool
 def search(query: str, kind: Literal["any", "pr", "issue"] = "any") -> str:
     """Find pull requests and issues by KEYWORDS (3-5 words, not a sentence). Returns number, kind, state and title.
     kind="pr" returns only pull requests. Issues usually describe a symptom; pull requests describe the change that fixed it, and they are often outnumbered by issues in mixed results. To find what changed, search with kind="pr", using code names (functions, fields, classes) rather than error messages."""
-    return unwrap(traced_tools.search(query, kind))
+    results, _ = traced_tools.search(query, kind)
+    if isinstance(results, str) or len(results) > SPARSE_RESULTS:
+        return json.dumps(results, default=str)
+    return json.dumps({"results": results, "note": sparse_note(query, len(results))}, default=str)
 
 
 @tool
