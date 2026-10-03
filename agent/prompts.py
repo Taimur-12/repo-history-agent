@@ -46,11 +46,18 @@ V3 = V2.replace(
 )
 
 
+V4 = V3.replace(
+    "- Search pull requests for those identifiers with `search(..., kind=\"pr\")`, one or two identifiers per search.",
+    "- Search pull requests for those identifiers with `search(..., kind=\"pr\")`, ONE identifier per search and nothing else. Every word must appear in a result, so each extra word can only remove results, and the fix may not mention the class or error you saw. Add a second word only if a single identifier returns too many results. This overrides the 3-5 word rule above.",
+)
+
+
 PROMPTS = {
     "v0": V0,
     "v1": V1,
     "v2": V2,
     "v3": V3,
+    "v4": V4,
 }
 
 DEFAULT_PROMPT = "v0"
