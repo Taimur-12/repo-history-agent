@@ -31,9 +31,26 @@ Evidence
 Then give the answer. The answer must not contradict the Evidence section, and must mention every item listed under "Still unresolved"."""
 
 
+V2 = V1 + """
+
+Finding the change behind a bug:
+- A bug report describes the symptom. The fix lives in a pull request, and pull requests are titled with code names, not error messages.
+- After reading an issue, list the code identifiers it mentions: function, class, field, module or config names (words like `snake_case`, `CamelCase` or `module.attribute`).
+- Search pull requests for those identifiers with `search(..., kind="pr")`, one or two identifiers per search.
+- Use error-message words only if identifier searches find nothing."""
+
+
+V3 = V2.replace(
+    "- After reading an issue, list the code identifiers it mentions",
+    "- Before searching for the fix, read the comments on the bug report with `get_comments`. The diagnosis, the code names involved and corrections from other users are usually in the replies, not the original report.\n- After reading an issue and its comments, list the code identifiers they mention",
+)
+
+
 PROMPTS = {
     "v0": V0,
     "v1": V1,
+    "v2": V2,
+    "v3": V3,
 }
 
 DEFAULT_PROMPT = "v0"
