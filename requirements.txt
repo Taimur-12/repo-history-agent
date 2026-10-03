@@ -1,0 +1,10 @@
+langchain-openai==1.6.2
+langgraph==1.2.11
+langgraph-checkpoint==4.2.0
+langgraph-prebuilt==1.1.0
+langgraph-sdk==0.4.4
+pytest==9.1.1
+python-dotenv==1.2.2
+PyYAML==6.0.3
+requests==2.34.2
+requests-toolbelt==1.0.0
