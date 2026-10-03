@@ -1,0 +1,35 @@
+- id: pending-sends-serialization
+  q: "why do i get 'Object of type Send is not JSON serializable' with PostgresSaver"
+  expect_tools_called: [search, "get_pr:5106"]
+  expect_cites: [5106, 5199]
+  also_acceptable: [1498, 5663, 6456]
+  must_mention: ["pending_sends", "0.5"]
+  should_not:
+    - "fixed in (version )?5\\.0\\.0"
+    - "upgrade to 5\\.0\\.0"
+
+- id: time-travel-interrupt-regression
+  q: "time travel to a subgraph checkpoint with an interrupt gives me the wrong state - is this fixed"
+  expect_tools_called: [search, "get_timeline:7498"]
+  expect_cites: [7498, 7592, 8458]
+  also_acceptable: [8597, 7593]
+  must_mention: ["1.1.7", "regression"]
+  should_not:
+    - "fixed in (version )?1\\.1\\.7"
+    - "resolved in (version )?1\\.1\\.7"
+    - "no longer an issue"
+    - "the fix was rejected"
+    - "maintainers declined"
+
+- id: time-travel-interrupt-verbose
+  q: "ok so im using interrupt() inside a subgraph and when i try to go back to an earlier checkpoint with time travel the state i get back is not what i expect, it looks like it replays the whole subgraph from the start instead of resuming where i pointed it. is this a known thing, did they ever fix it or am i doing something wrong"
+  expect_tools_called: [search, "get_timeline:7498"]
+  expect_cites: [7498, 7592, 8458]
+  also_acceptable: [8597, 7593]
+  must_mention: ["1.1.7", "regression"]
+  should_not:
+    - "fixed in (version )?1\\.1\\.7"
+    - "resolved in (version )?1\\.1\\.7"
+    - "no longer an issue"
+    - "the fix was rejected"
+    - "maintainers declined"
