@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Annotated, TypedDict
+from typing import Annotated, Literal, TypedDict
 
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
@@ -28,9 +28,10 @@ def unwrap(result):
 
 
 @tool
-def search(query: str) -> str:
-    """Find pull requests and issues by KEYWORDS (3-5 words, not a sentence). Returns number, kind, state and title."""
-    return unwrap(traced_tools.search(query))
+def search(query: str, kind: Literal["any", "pr", "issue"] = "any") -> str:
+    """Find pull requests and issues by KEYWORDS (3-5 words, not a sentence). Returns number, kind, state and title.
+    kind="pr" returns only pull requests. Issues usually describe a symptom; pull requests describe the change that fixed it, and they are often outnumbered by issues in mixed results. To find what changed, search with kind="pr", using code names (functions, fields, classes) rather than error messages."""
+    return unwrap(traced_tools.search(query, kind))
 
 
 @tool

@@ -158,8 +158,13 @@ def get_comments(n):
     ], cache_hit
 
 
-def search(query, limit=10):
-    encoded = quote_plus(f"repo:{REPO} {query}")
+SEARCH_KINDS = {"any": "", "pr": "is:pr ", "issue": "is:issue "}
+
+
+def search(query, kind="any", limit=10):
+    if kind not in SEARCH_KINDS:
+        return f"unknown kind {kind!r}, use one of: any, pr, issue", False
+    encoded = quote_plus(f"repo:{REPO} {SEARCH_KINDS[kind]}{query}")
     try:
         result, cache_hit = fetch(f"/search/issues?q={encoded}&per_page={limit}")
     except requests.HTTPError as exc:
