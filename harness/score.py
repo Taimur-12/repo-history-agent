@@ -52,11 +52,19 @@ def score_match_any(case, answer):
     return ["none of must_match_any"]
 
 
+QUOTED = re.compile(r'"[^"\n]*"|\u201c[^\u201d\n]*\u201d')
+
+
+def without_quotes(text):
+    return QUOTED.sub(" ", text or "")
+
+
 def score_forbidden(case, answer):
+    claimed = without_quotes(answer)
     return [
         pattern
         for pattern in case.get("should_not", [])
-        if re.search(pattern, answer or "", re.IGNORECASE)
+        if re.search(pattern, claimed, re.IGNORECASE)
     ]
 
 
@@ -146,6 +154,24 @@ def report(meta, rows):
                 print(f"  {label:<18} {str(item):<28} {count}/{n}")
 
 
+def rescore(path):
+    results_file = Path(path).resolve()
+    runs_file = results_file.parents[1] / "traces" / "runs.jsonl"
+    records = {}
+    for line in runs_file.read_text().splitlines():
+        record = json.loads(line)
+        records[record["run_id"]] = record
+
+    cases = {c["id"]: c for c in yaml.safe_load(GOLDEN.read_text())}
+    saved = json.loads(results_file.read_text())
+    results = [score(cases[r["case_id"]], records[r["run_id"]]) for r in saved["runs"]]
+
+    before = sum(r["passed"] for r in saved["runs"])
+    after = sum(r["passed"] for r in results)
+    print(f"rescored {results_file.name}: {before}/{len(results)} as saved -> {after}/{len(results)} with current grader")
+    report(saved["meta"], summarise(results))
+
+
 def main():
     from agent.graph import MODEL, ask, build
 
@@ -155,7 +181,12 @@ def main():
     parser.add_argument("--prompt", default="v0")
     parser.add_argument("--workers", type=int, default=3)
     parser.add_argument("--reasoning", default=None, choices=["none", "low", "medium", "high"])
+    parser.add_argument("--rescore", default=None, help="re-grade a saved results file without rerunning the agent")
     args = parser.parse_args()
+
+    if args.rescore:
+        rescore(args.rescore)
+        return
 
     cases = yaml.safe_load(GOLDEN.read_text())
     if args.cases:
