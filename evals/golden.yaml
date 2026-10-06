@@ -90,3 +90,17 @@
   must_mention: ["10007"]
   should_not:
     - "(recursion[_ ]limit|default)\\W+(is|remains)\\W+(still\\W+)?25\\b"
+
+- id: langgraph-2-release-date
+  q: "when is langgraph 2.0 coming out? i want to know how long i have before the deprecated stuff gets removed"
+  expect_tools_called: [search]
+  expect_cites: []
+  also_acceptable: [5843, 5243, 4973]
+  must_match_any:
+    - "no (official |announced |public |confirmed )?(release )?date"
+    - "(not|n't) (been )?(announced|scheduled|published|stated|mentioned|given)"
+    - "(couldn't|could not|can't|cannot|didn't|did not) find"
+    - "no (information|record|mention|announcement|timeline)"
+  should_not:
+    - "langgraph 2\\.0(\\.0)? (was|has been|is) (released|out|available)"
+    - "\\b(release[sd]?|ship(s|ped)?|launch(es|ed)?|coming out|come out|arrive[sd]?)\\b[^.]{0,40}\\b(Q[1-4]\\s*20\\d\\d|(early|mid|late)[- ]20\\d\\d|(january|february|march|april|may|june|july|august|september|october|november|december)\\s+20\\d\\d)"
