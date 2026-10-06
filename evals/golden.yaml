@@ -33,3 +33,60 @@
     - "no longer an issue"
     - "the fix was rejected"
     - "maintainers declined"
+
+- id: react-agent-v2-why
+  q: "what's the difference between version v1 and v2 in create_react_agent, and why did v2 become the default?"
+  expect_tools_called: [search, "get_pr:3126"]
+  expect_cites: [3126]
+  also_acceptable: [4438, 3268, 3124, 3589]
+  must_mention: ["interrupt"]
+  should_not:
+    - "never (been )?released"
+
+- id: toolnode-deprecation-warning
+  q: "every time i import ToolNode from langgraph.prebuilt i get a deprecation warning. is ToolNode deprecated, should i switch to langchain?"
+  expect_tools_called: [search, "get_pr:6669"]
+  expect_cites: [6669]
+  also_acceptable: [6295, 6093, 6321]
+  must_mention: ["AgentState", "1.0.6"]
+  should_not:
+    - "ToolNode (is|has been) deprecated"
+
+- id: messagegraph-status
+  q: "i'm upgrading an old project that uses MessageGraph and i read somewhere it was removed. can i still use it, and what should i use instead?"
+  expect_tools_called: [search, "get_pr:5843"]
+  expect_cites: [5843, 4875]
+  also_acceptable: [5101, 4873, 5251, 5252, 1330]
+  must_mention: ["StateGraph", "deprecated"]
+  should_not:
+    - "MessageGraph no longer exists"
+    - "MessageGraph is (not|no longer) available"
+
+- id: node-timeouts-retry
+  q: "which langgraph version lets me set a timeout on individual nodes, and if i put a TimeoutPolicy and a RetryPolicy on the same node will it actually retry when it times out?"
+  expect_tools_called: [search, "get_pr:7659"]
+  expect_cites: [7631, 7659]
+  also_acceptable: [7599, 7627, 7646, 8802]
+  must_mention: ["1.2", "NodeTimeoutError"]
+  should_not:
+    - "(added|introduced|shipped|available) in (langgraph )?v?1\\.1\\.10"
+    - "(timeouts?|NodeTimeoutError) (are|is) not retried by default"
+
+- id: context-api-migration
+  q: "i have old code that passes user_id through config['configurable'] and sets config_schema on my StateGraph. is that deprecated now, and what should i use instead?"
+  expect_tools_called: [search, "get_pr:5243"]
+  expect_cites: [5243]
+  also_acceptable: [5023, 5746, 6106, 5546]
+  must_mention: ["context_schema", "0.6"]
+  should_not:
+    - "configurable\\W{0,4}\\s*(is|has been) (now )?(deprecated|removed)"
+    - "config_schema(`)?\\s*(is|has been|was) removed"
+
+- id: recursion-limit-default
+  q: "my graph used to stop with a recursion limit error after 25 steps but now long runs just keep going. did the default recursion limit change? what is it now and why?"
+  expect_tools_called: [search, "get_pr:6676", "get_pr:7355"]
+  expect_cites: [6676, 7355]
+  also_acceptable: []
+  must_mention: ["10007"]
+  should_not:
+    - "(recursion[_ ]limit|default)\\W+(is|remains)\\W+(still\\W+)?25\\b"
