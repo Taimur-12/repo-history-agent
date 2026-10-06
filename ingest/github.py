@@ -194,7 +194,7 @@ def release_map():
     mapping = {}
     for release in releases:
         package, version = split_tag(release["tag_name"])
-        for number in re.findall(r"\(#(\d+)\)", release.get("body") or ""):
+        for number in set(re.findall(r"\(#(\d+)\)", release.get("body") or "")):
             mapping.setdefault(int(number), []).append({
                 "package": package,
                 "version": version,
