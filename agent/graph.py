@@ -1,3 +1,4 @@
+import ast
 import json
 import os
 from typing import Annotated, Literal, TypedDict
@@ -12,7 +13,7 @@ from langgraph.graph.message import add_messages
 
 from agent import tools as traced_tools
 from agent.prompts import DEFAULT_PROMPT, PROMPTS
-from agent.trace import ROOT, run
+from agent.trace import ROOT, current_run, run
 
 load_dotenv(ROOT / ".env")
 
@@ -40,14 +41,59 @@ def sparse_note(query, count):
             f"or a different kind, before concluding anything.")
 
 
+SEARCH_STREAK = 3
+
+
+def earlier_calls():
+    active = current_run.get()
+    return active["calls"] if active else []
+
+
+def plain(value):
+    try:
+        return str(ast.literal_eval(value))
+    except (ValueError, SyntaxError):
+        return value.strip("'\"")
+
+
+def search_key(query, kind):
+    return frozenset(query.lower().split()), kind
+
+
+def key_of(call):
+    args = [plain(a) for a in call["args"]]
+    kind = args[1] if len(args) > 1 else plain(call["kwargs"].get("kind", "'any'"))
+    return search_key(args[0], kind)
+
+
+def loop_note(query, kind):
+    calls = earlier_calls()
+    if any(c["tool"] == "search" and key_of(c) == search_key(query, kind) for c in calls):
+        return ("You already ran this search earlier (same words, same kind), so these are the same results. "
+                "Open a promising result with get_pr or get_issue, or search for something different.")
+    streak = 0
+    for call in reversed(calls):
+        if call["tool"] != "search":
+            break
+        streak += 1
+    if streak >= SEARCH_STREAK:
+        return (f"This is search number {streak + 1} in a row without opening any result. Titles alone rarely "
+                "answer the question: open the most promising result with get_pr or get_issue before searching again.")
+    return None
+
+
 @tool
 def search(query: str, kind: Literal["any", "pr", "issue"] = "any") -> str:
     """Find pull requests and issues by KEYWORDS (3-5 words, not a sentence). Returns number, kind, state and title.
     kind="pr" returns only pull requests. Issues usually describe a symptom; pull requests describe the change that fixed it, and they are often outnumbered by issues in mixed results. To find what changed, search with kind="pr", using code names (functions, fields, classes) rather than error messages."""
+    repeat = loop_note(query, kind)
     results, _ = traced_tools.search(query, kind)
-    if isinstance(results, str) or len(results) > SPARSE_RESULTS:
+    if isinstance(results, str):
+        return results
+    notes = [n for n in (repeat, sparse_note(query, len(results)) if len(results) <= SPARSE_RESULTS else None) if n]
+    if not notes:
         return json.dumps(results, default=str)
-    return json.dumps({"results": results, "note": sparse_note(query, len(results))}, default=str)
+    return json.dumps({"results": results, "note": " ".join(notes)}, default=str)
 
 
 @tool
