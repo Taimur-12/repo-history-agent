@@ -43,6 +43,15 @@ def score_mentions(case, answer):
     return [phrase for phrase in case.get("must_mention", []) if phrase.lower() not in lowered]
 
 
+def score_match_any(case, answer):
+    patterns = case.get("must_match_any", [])
+    if not patterns:
+        return []
+    if any(re.search(pattern, answer or "", re.IGNORECASE) for pattern in patterns):
+        return []
+    return ["none of must_match_any"]
+
+
 def score_forbidden(case, answer):
     return [
         pattern
@@ -57,16 +66,18 @@ def score(case, record):
     missing_tools = score_tools(case, record.get("calls", []))
     missing_mentions = score_mentions(case, answer)
     forbidden = score_forbidden(case, answer)
+    missing_any = score_match_any(case, answer)
 
     return {
         "case_id": case["id"],
         "run_id": record["run_id"],
-        "passed": not (missing_cites or missing_tools or missing_mentions or forbidden),
+        "passed": not (missing_cites or missing_tools or missing_mentions or forbidden or missing_any),
         "missing_cites": missing_cites,
         "found_cites": hit_cites,
         "missing_tools": missing_tools,
         "missing_mentions": missing_mentions,
         "forbidden_hits": forbidden,
+        "missing_any": missing_any,
         "termination": record["termination"],
         "tool_calls": record["tool_calls"],
         "tools_called": record.get("tools_called", []),
@@ -91,6 +102,7 @@ def summarise(results):
         unused = Counter(tool for r in runs for tool in r["missing_tools"])
         unsaid = Counter(phrase for r in runs for phrase in r["missing_mentions"])
         banned = Counter(pattern for r in runs for pattern in r["forbidden_hits"])
+        unmatched = Counter(item for r in runs for item in r.get("missing_any", []))
         rows.append({
             "case_id": case_id,
             "runs": n,
@@ -104,6 +116,7 @@ def summarise(results):
             "missing_tools": dict(unused),
             "missing_mentions": dict(unsaid),
             "forbidden_hits": dict(banned),
+            "missing_any": dict(unmatched),
         })
     return rows
 
@@ -127,7 +140,8 @@ def report(meta, rows):
         n = row["runs"]
         print(f"\n{row['case_id']}  ({row['passed']}/{n} passed) — how often each problem occurred")
         for label, key in (("missing citation", "missing_cites"), ("tool not called", "missing_tools"),
-                           ("never mentioned", "missing_mentions"), ("said banned thing", "forbidden_hits")):
+                           ("never mentioned", "missing_mentions"), ("said banned thing", "forbidden_hits"),
+                           ("no required phrase", "missing_any")):
             for item, count in sorted(row[key].items(), key=lambda kv: -kv[1]):
                 print(f"  {label:<18} {str(item):<28} {count}/{n}")
 
