@@ -99,6 +99,13 @@ Then give the answer. It must not contradict the Evidence section, must mention 
 </answer_format>"""
 
 
+V5_1 = V5.replace(
+    "- To find the change behind something, search pull requests (`kind=\"pr\"`) for code identifiers",
+    "- To find a topic, such as your first search for a question, use 3-5 distinctive words from it.\n"
+    "- To find the change behind a bug, after following <finding_the_fix>, search pull requests (`kind=\"pr\"`) for code identifiers",
+)
+
+
 PROMPTS = {
     "v0": V0,
     "v1": V1,
@@ -106,6 +113,7 @@ PROMPTS = {
     "v3": V3,
     "v4": V4,
     "v5": V5,
+    "v5.1": V5_1,
 }
 
 DEFAULT_PROMPT = "v0"
