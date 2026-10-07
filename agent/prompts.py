@@ -106,6 +106,17 @@ V5_1 = V5.replace(
 )
 
 
+V5_2 = V5_1.replace(
+    "- `version_for_pr` is the only source for release versions.\n",
+    "- `version_for_pr` is the only source for release versions.\n"
+    "- You have a limited number of turns, and every turn counts whether it makes one tool call or several. "
+    "When you already know which items to read, call the tools for all of them in the same turn. For example: "
+    "`get_pr`, `get_timeline` and `version_for_pr` on one pull request together; `get_pr` on the three most "
+    "promising search results together; `get_issue` and `get_comments` on a bug report together. Only wait for "
+    "a result when you need it to decide what to read next.\n",
+)
+
+
 PROMPTS = {
     "v0": V0,
     "v1": V1,
@@ -114,6 +125,7 @@ PROMPTS = {
     "v4": V4,
     "v5": V5,
     "v5.1": V5_1,
+    "v5.2": V5_2,
 }
 
 DEFAULT_PROMPT = "v0"
