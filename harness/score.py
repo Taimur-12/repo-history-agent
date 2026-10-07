@@ -11,6 +11,11 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 GOLDEN = ROOT / "evals" / "golden.yaml"
 RESULTS_DIR = ROOT / "data" / "results"
+RUNS_FILE = ROOT / "data" / "traces" / "runs.jsonl"
+
+SMALL_MODELS = ("-mini", "-nano")
+FREE_TOKENS = {"small": 2_500_000, "large": 250_000}
+TOKENS_PER_RUN = 70_000
 
 
 def cited_numbers(answer):
@@ -172,6 +177,37 @@ def rescore(path):
     report(saved["meta"], summarise(results))
 
 
+def model_group(model):
+    return "small" if any(tag in model for tag in SMALL_MODELS) else "large"
+
+
+def tokens_used_today(model):
+    if not RUNS_FILE.exists():
+        return 0
+    today = datetime.now(timezone.utc).date().isoformat()
+    group = model_group(model)
+    used = 0
+    for line in RUNS_FILE.read_text().splitlines():
+        run = json.loads(line)
+        if not run.get("started_at", "").startswith(today):
+            continue
+        if model_group(run.get("model") or "") != group:
+            continue
+        used += run.get("tokens_in", 0) + run.get("tokens_out", 0)
+    return used
+
+
+def check_budget(model, jobs, allow_paid):
+    limit = FREE_TOKENS[model_group(model)]
+    used = tokens_used_today(model)
+    needed = jobs * TOKENS_PER_RUN
+    print(f"free tokens today (UTC): {used:,} used of {limit:,}; this run needs about {needed:,}")
+    if used + needed <= limit or allow_paid:
+        return True
+    print("this run would go past today's free tokens. Wait for 00:00 UTC, run fewer cases, or pass --allow-paid.")
+    return False
+
+
 def main():
     from agent.graph import MODEL, ask, build
 
@@ -182,6 +218,7 @@ def main():
     parser.add_argument("--workers", type=int, default=3)
     parser.add_argument("--reasoning", default=None, choices=["none", "low", "medium", "high"])
     parser.add_argument("--rescore", default=None, help="re-grade a saved results file without rerunning the agent")
+    parser.add_argument("--allow-paid", action="store_true", help="run even if it goes past today's free tokens")
     args = parser.parse_args()
 
     if args.rescore:
@@ -194,6 +231,8 @@ def main():
 
     agent = build(args.prompt, args.reasoning)
     jobs = [case for case in cases for _ in range(args.repeat)]
+    if not check_budget(MODEL, len(jobs), args.allow_paid):
+        return
     print(f"running {len(jobs)} runs ({len(cases)} cases x {args.repeat}) with prompt {args.prompt} ...", flush=True)
 
     def execute(case):
