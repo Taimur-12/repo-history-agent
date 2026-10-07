@@ -82,10 +82,16 @@ def loop_note(query, kind):
     return None
 
 
-@tool
+@tool(parse_docstring=True)
 def search(query: str, kind: Literal["any", "pr", "issue"] = "any") -> str:
-    """Find pull requests and issues by KEYWORDS (3-5 words, not a sentence). Returns number, kind, state and title.
-    kind="pr" returns only pull requests. Issues usually describe a symptom; pull requests describe the change that fixed it, and they are often outnumbered by issues in mixed results. To find what changed, search with kind="pr", using code names (functions, fields, classes) rather than error messages."""
+    """Find pull requests and issues in langchain-ai/langgraph whose text contains every word of the query.
+
+    Returns up to 10 matches, each with number, kind (pr or issue), state and title. May add a note about the search itself.
+
+    Args:
+        query: Keywords only. Every word must appear in a result, so each extra word removes matches.
+        kind: Which items to return. "pr" returns only pull requests, "issue" only issues, "any" both.
+    """
     repeat = loop_note(query, kind)
     results, _ = traced_tools.search(query, kind)
     if isinstance(results, str):
@@ -96,33 +102,55 @@ def search(query: str, kind: Literal["any", "pr", "issue"] = "any") -> str:
     return json.dumps({"results": results, "note": " ".join(notes)}, default=str)
 
 
-@tool
+@tool(parse_docstring=True)
 def get_pr(number: int) -> str:
-    """Get one pull request: title, body, state, merged, dates, author, labels, comment counts, merge commit."""
+    """Get one pull request: title, body, state, merged, dates, author, labels, comment counts and merge commit.
+
+    Args:
+        number: The pull request number, without the #.
+    """
     return unwrap(traced_tools.get_pr(number))
 
 
-@tool
+@tool(parse_docstring=True)
 def get_issue(number: int) -> str:
-    """Get one issue: title, body, state, state_reason, dates, author, labels."""
+    """Get one issue: title, body, state, state_reason, dates, author and labels.
+
+    Args:
+        number: The issue number, without the #.
+    """
     return unwrap(traced_tools.get_issue(number))
 
 
-@tool
+@tool(parse_docstring=True)
 def get_timeline(number: int) -> str:
-    """Get what happened to a pull request or issue: cross_references (things that mention it, including ones filed later), history (merged, closed, reviewed, labeled events with actors) and reviewed (whether a human ever reviewed it)."""
+    """Get what happened to a pull request or issue after it was opened.
+
+    Returns cross_references (every pull request or issue that mentions it, including ones filed later, with their state), history (merged, closed, reopened, reviewed, labeled and renamed events with who did them) and reviewed (whether a human ever reviewed it).
+
+    Args:
+        number: The pull request or issue number, without the #.
+    """
     return unwrap(traced_tools.get_timeline(number))
 
 
-@tool
+@tool(parse_docstring=True)
 def get_comments(number: int) -> str:
-    """Get the conversation thread on a pull request or issue, with author, author_type and body."""
+    """Get the conversation on a pull request or issue: each comment's author, author_type (User or Bot), date and body.
+
+    Args:
+        number: The pull request or issue number, without the #.
+    """
     return unwrap(traced_tools.get_comments(number))
 
 
-@tool
+@tool(parse_docstring=True)
 def version_for_pr(number: int) -> str:
-    """Get the released version(s) a merged pull request shipped in, with package name and publish date."""
+    """Get the GitHub releases whose notes list a pull request, with package name, version and publish date.
+
+    Args:
+        number: The pull request number, without the #.
+    """
     return unwrap(traced_tools.version_for_pr(number))
 
 
