@@ -64,13 +64,23 @@ def without_quotes(text):
     return QUOTED.sub(" ", text or "")
 
 
+CLAUSE_START = re.compile(r"[.!?;\n]")
+NEGATION = re.compile(r"\b(no|not|never|nothing|none|neither|nor|without|cannot|isn't|aren't|wasn't|weren't|doesn't|didn't|don't|hasn't|haven't|can't|won't)\b", re.IGNORECASE)
+
+
+def negated(text, start):
+    clause_starts = [m.end() for m in CLAUSE_START.finditer(text, 0, start)]
+    clause = text[clause_starts[-1] if clause_starts else 0:start]
+    return bool(NEGATION.search(clause))
+
+
+def claims(pattern, text):
+    return any(not negated(text, m.start()) for m in re.finditer(pattern, text, re.IGNORECASE))
+
+
 def score_forbidden(case, answer):
     claimed = without_quotes(answer)
-    return [
-        pattern
-        for pattern in case.get("should_not", [])
-        if re.search(pattern, claimed, re.IGNORECASE)
-    ]
+    return [pattern for pattern in case.get("should_not", []) if claims(pattern, claimed)]
 
 
 def score(case, record):
