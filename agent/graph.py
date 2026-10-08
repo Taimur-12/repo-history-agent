@@ -1,6 +1,7 @@
 import ast
 import json
 import os
+import re
 from typing import Annotated, Literal, TypedDict
 
 from dotenv import load_dotenv
@@ -12,6 +13,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 
 from agent import tools as traced_tools
+from ingest import github
 from agent.prompts import DEFAULT_PROMPT, PROMPTS
 from agent.trace import ROOT, current_run, run
 
@@ -161,9 +163,62 @@ class AgentState(TypedDict):
     messages: Annotated[list, add_messages]
     steps: int
     out_of_steps: bool
+    checked: bool
 
 
-def build(prompt_version=DEFAULT_PROMPT, reasoning=None):
+def key_changes(answer):
+    keys, inside = set(), False
+    for line in (answer or "").splitlines():
+        if re.match(r"\W*key change", line, re.IGNORECASE):
+            inside = True
+        elif inside and not re.match(r"\s+\S", line):
+            inside = False
+        if inside:
+            keys |= {int(n) for n in re.findall(r"#(\d{3,6})", line)}
+    return keys
+
+
+def numbers_called(messages, tool_name):
+    called = set()
+    for message in messages:
+        for call in getattr(message, "tool_calls", None) or []:
+            if call["name"] == tool_name and "number" in call["args"]:
+                called.add(int(call["args"]["number"]))
+    return called
+
+
+def is_merged(number):
+    data, _ = github.get_pr(number)
+    return isinstance(data, dict) and bool(data.get("merged"))
+
+
+def answer_problems(messages):
+    keys = key_changes(messages[-1].content)
+    problems = {}
+    if not any(is_merged(k) for k in keys):
+        problems["no_merged_key_change"] = (
+            "Your answer rests on no merged pull request. Look once more for the merged change behind this, "
+            "for example by searching pull requests for the code identifiers you found. If you are confident "
+            "no such change exists, keep your answer."
+        )
+    no_timeline = sorted(keys - numbers_called(messages, "get_timeline"))
+    if no_timeline:
+        listed = ", ".join(f"#{n}" for n in no_timeline)
+        problems["key_change_without_timeline"] = (
+            f"You name {listed} as a key change but never called get_timeline on it, so you have not checked "
+            "what happened to it later (reverts, regressions, follow-up fixes)."
+        )
+    no_version = sorted(k for k in keys - numbers_called(messages, "version_for_pr") if is_merged(k))
+    if no_version:
+        listed = ", ".join(f"#{n}" for n in no_version)
+        problems["key_change_without_version"] = (
+            f"You name {listed} as a key change but never called version_for_pr on it, so any release you "
+            "give for it is unverified."
+        )
+    return problems
+
+
+def build(prompt_version=DEFAULT_PROMPT, reasoning=None, check=False):
     options = {"reasoning_effort": reasoning} if reasoning else {}
     model = ChatOpenAI(model=MODEL, **options)
     model_with_tools = model.bind_tools(TOOLBOX)
@@ -197,8 +252,25 @@ def build(prompt_version=DEFAULT_PROMPT, reasoning=None):
         reply = model.invoke(history)
         return {"messages": skipped + [reply], "out_of_steps": True}
 
+    def check_node(state):
+        problems = answer_problems(state["messages"])
+        active = current_run.get()
+        if active is not None:
+            active["checks_fired"] = sorted(problems)
+        if not problems:
+            return {"checked": True}
+        note = "Before you finish, a check of your answer found:\n" + "\n".join(f"- {text}" for text in problems.values())
+        return {"messages": [HumanMessage(note)], "checked": True}
+
+    def after_check(state):
+        if isinstance(state["messages"][-1], HumanMessage):
+            return "agent"
+        return END
+
     def route(state):
         if not state["messages"][-1].tool_calls:
+            if check and not state["checked"]:
+                return "check"
             return END
         if state["steps"] >= MAX_STEPS:
             return "finalize"
@@ -208,23 +280,27 @@ def build(prompt_version=DEFAULT_PROMPT, reasoning=None):
     graph.add_node("agent", agent_node)
     graph.add_node("tools", tools_node)
     graph.add_node("finalize", finalize_node)
+    graph.add_node("check", check_node)
     graph.add_edge(START, "agent")
-    graph.add_conditional_edges("agent", route, ["tools", "finalize", END])
+    graph.add_conditional_edges("agent", route, ["tools", "finalize", "check", END])
+    graph.add_conditional_edges("check", after_check, ["agent", END])
     graph.add_edge("tools", "agent")
     graph.add_edge("finalize", END)
     return graph.compile()
 
 
-def ask(question, case_id=None, agent=None, prompt_version=DEFAULT_PROMPT, reasoning=None):
-    agent = agent or build(prompt_version, reasoning)
+def ask(question, case_id=None, agent=None, prompt_version=DEFAULT_PROMPT, reasoning=None, check=False):
+    agent = agent or build(prompt_version, reasoning, check)
 
     with run(question, case_id=case_id) as record:
         record["model"] = MODEL
         record["prompt_version"] = prompt_version
         record["reasoning"] = reasoning or "default"
+        record["check"] = check
+        record["checks_fired"] = []
         try:
             state = agent.invoke(
-                {"messages": [HumanMessage(question)], "steps": 0, "out_of_steps": False},
+                {"messages": [HumanMessage(question)], "steps": 0, "out_of_steps": False, "checked": False},
                 config={"recursion_limit": RECURSION_LIMIT},
             )
         except GraphRecursionError:

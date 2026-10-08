@@ -228,6 +228,7 @@ def main():
     parser.add_argument("--workers", type=int, default=3)
     parser.add_argument("--reasoning", default=None, choices=["none", "low", "medium", "high"])
     parser.add_argument("--rescore", default=None, help="re-grade a saved results file without rerunning the agent")
+    parser.add_argument("--check", action="store_true", help="add the answer-checking node before the final answer")
     parser.add_argument("--allow-paid", action="store_true", help="run even if it goes past today's free tokens")
     args = parser.parse_args()
 
@@ -239,14 +240,14 @@ def main():
     if args.cases:
         cases = [c for c in cases if c["id"] in args.cases]
 
-    agent = build(args.prompt, args.reasoning)
+    agent = build(args.prompt, args.reasoning, args.check)
     jobs = [case for case in cases for _ in range(args.repeat)]
     if not check_budget(MODEL, len(jobs), args.allow_paid):
         return
     print(f"running {len(jobs)} runs ({len(cases)} cases x {args.repeat}) with prompt {args.prompt} ...", flush=True)
 
     def execute(case):
-        record = ask(case["q"], case_id=case["id"], agent=agent, prompt_version=args.prompt, reasoning=args.reasoning)
+        record = ask(case["q"], case_id=case["id"], agent=agent, prompt_version=args.prompt, reasoning=args.reasoning, check=args.check)
         result = score(case, record)
         print(f"  {case['id']:<34} {'PASS' if result['passed'] else 'fail'}", flush=True)
         return result
@@ -257,6 +258,7 @@ def main():
     meta = {
         "model": MODEL,
         "prompt_version": args.prompt,
+        "check": args.check,
         "reasoning": args.reasoning or "default",
         "repeat": args.repeat,
         "ran_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -266,7 +268,8 @@ def main():
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    out = RESULTS_DIR / f"{stamp}_{args.prompt}_r-{args.reasoning or 'default'}_x{args.repeat}.json"
+    label = f"{args.prompt}_check" if args.check else args.prompt
+    out = RESULTS_DIR / f"{stamp}_{label}_r-{args.reasoning or 'default'}_x{args.repeat}.json"
     out.write_text(json.dumps({"meta": meta, "summary": rows, "runs": results}, indent=2))
     print(f"\nwritten to {out.relative_to(ROOT)}")
 
