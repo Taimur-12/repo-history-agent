@@ -150,6 +150,10 @@ def get_comments(number: int) -> str:
 def version_for_pr(number: int) -> str:
     """Get the GitHub releases whose notes list a pull request, with package name, version and publish date.
 
+    A release marked `reverted_in_same_release` lists both the pull request and a revert of it
+    (the revert's number is in `reverted_by` when the notes give one), so the change is not in
+    effect in that release.
+
     Args:
         number: The pull request number, without the #.
     """

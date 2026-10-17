@@ -188,19 +188,59 @@ def split_tag(tag):
     return "langgraph", tag
 
 
+PR_LINK = re.compile(r"\(#(\d+)\)|\[#(\d+)\]\(")
+REVERT = re.compile(r'Revert "(.+)"', re.IGNORECASE)
+TRAILING_LINK = re.compile(r"\s*(\(#\d+\)|\[#\d+\]\([^)]*\))\s*$")
+
+
+def pr_numbers(text):
+    return [int(a or b) for a, b in PR_LINK.findall(text)]
+
+
+def note_title(text):
+    return TRAILING_LINK.sub("", text.strip().lstrip("*-").strip()).strip()
+
+
+def read_notes(body):
+    listed, reverted = {}, {}
+    for line in body.splitlines():
+        match = REVERT.search(line)
+        if not match:
+            for number in pr_numbers(line):
+                listed.setdefault(number, note_title(line))
+            continue
+        quoted = match.group(1)
+        outside = pr_numbers(line[match.end():])
+        by = outside[0] if outside else None
+        reverted[note_title(quoted)] = by
+        for number in pr_numbers(quoted):
+            reverted[number] = by
+        for number in outside:
+            listed.setdefault(number, note_title(line))
+    return listed, reverted
+
+
 def release_map():
     releases, cache_hit = fetch(f"/repos/{REPO}/releases?per_page=100")
 
     mapping = {}
     for release in releases:
         package, version = split_tag(release["tag_name"])
-        for number in set(re.findall(r"\(#(\d+)\)", release.get("body") or "")):
-            mapping.setdefault(int(number), []).append({
+        listed, reverted = read_notes(release.get("body") or "")
+        for number, title in listed.items():
+            entry = {
                 "package": package,
                 "version": version,
                 "tag": release["tag_name"],
                 "published_at": (release.get("published_at") or "")[:10],
-            })
+            }
+            for key in (number, title):
+                if key in reverted:
+                    entry["reverted_in_same_release"] = True
+                    if reverted[key]:
+                        entry["reverted_by"] = reverted[key]
+                    break
+            mapping.setdefault(number, []).append(entry)
     return mapping, cache_hit
 
 
