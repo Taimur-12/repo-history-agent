@@ -1,4 +1,5 @@
 import argparse
+import ast
 import json
 import re
 from concurrent.futures import ThreadPoolExecutor
@@ -83,6 +84,74 @@ def score_forbidden(case, answer):
     return [pattern for pattern in case.get("should_not", []) if claims(pattern, claimed)]
 
 
+OPENING_TOOLS = ("get_pr", "get_issue", "get_timeline", "get_comments")
+
+
+def call_args(call):
+    values = []
+    for text in call.get("args", []):
+        try:
+            values.append(ast.literal_eval(text))
+        except (ValueError, SyntaxError):
+            values.append(text)
+    return values
+
+
+def replay(call):
+    from ingest import github
+
+    tools = {
+        "search": github.search,
+        "get_pr": github.get_pr,
+        "get_issue": github.get_issue,
+        "get_timeline": github.get_timeline,
+        "get_comments": github.get_comments,
+        "version_for_pr": github.version_for_pr,
+    }
+    chosen = tools.get(call["tool"])
+    if chosen is None or call.get("tool_error") or call.get("failed"):
+        return None
+    try:
+        return chosen(*call_args(call))[0]
+    except Exception:
+        return None
+
+
+def target_items(case):
+    items = set(case.get("expect_cites", []))
+    for entry in case.get("expect_tools_called", []):
+        _, _, arg = str(entry).partition(":")
+        if arg.isdigit():
+            items.add(int(arg))
+    return sorted(items)
+
+
+def score_stages(case, record):
+    surfaced, opened, seen = set(), set(), []
+    for call in record.get("calls", []):
+        result = replay(call)
+        if result is None:
+            continue
+        if call["tool"] == "search" and isinstance(result, list):
+            surfaced |= {item["number"] for item in result}
+        if call["tool"] in OPENING_TOOLS:
+            opened.add(int(call_args(call)[0]))
+        seen.append(json.dumps(result, default=str).lower())
+
+    context = " ".join(seen)
+    answer = (record.get("answer") or "").lower()
+    cited = cited_numbers(record.get("answer"))
+    items = {
+        str(n): {"surfaced": n in surfaced, "opened": n in opened, "cited": n in cited}
+        for n in target_items(case)
+    }
+    facts = {
+        phrase: {"in_context": phrase.lower() in context, "said": phrase.lower() in answer}
+        for phrase in case.get("must_mention", [])
+    }
+    return {"items": items, "facts": facts}
+
+
 def score(case, record):
     answer = record.get("answer")
     missing_cites, hit_cites = score_citations(case, answer)
@@ -109,6 +178,7 @@ def score(case, record):
         "tokens_out": record.get("tokens_out", 0),
         "cache_misses": sum(1 for c in record.get("calls", []) if c.get("cache_hit") is False),
         "tool_errors": sum(1 for c in record.get("calls", []) if c.get("tool_error")),
+        "stages": score_stages(case, record),
         "answer": answer,
     }
 
@@ -126,6 +196,12 @@ def summarise(results):
         unsaid = Counter(phrase for r in runs for phrase in r["missing_mentions"])
         banned = Counter(pattern for r in runs for pattern in r["forbidden_hits"])
         unmatched = Counter(item for r in runs for item in r.get("missing_any", []))
+        stages = {"items": {}, "facts": {}}
+        for r in runs:
+            for group in ("items", "facts"):
+                for key, flags in r["stages"][group].items():
+                    counts = stages[group].setdefault(key, Counter())
+                    counts.update(flag for flag, value in flags.items() if value)
         rows.append({
             "case_id": case_id,
             "runs": n,
@@ -140,8 +216,26 @@ def summarise(results):
             "missing_mentions": dict(unsaid),
             "forbidden_hits": dict(banned),
             "missing_any": dict(unmatched),
+            "stages": {group: {key: dict(c) for key, c in found.items()} for group, found in stages.items()},
         })
     return rows
+
+
+def report_stages(rows):
+    print("\nwhere required evidence was lost (runs out of n)")
+    print(f"{'case':<34} {'needed':<18} {'surfaced':>9} {'opened':>7} {'cited':>6}   {'in context':>10} {'said':>5}")
+    print("-" * 98)
+    for row in rows:
+        n = row["runs"]
+        first = True
+        for number, c in row["stages"]["items"].items():
+            label = row["case_id"] if first else ""
+            print(f"{label:<34} #{number:<17} {c.get('surfaced', 0):>5}/{n:<3} {c.get('opened', 0):>3}/{n:<3} {c.get('cited', 0):>2}/{n:<3}")
+            first = False
+        for phrase, c in row["stages"]["facts"].items():
+            label = row["case_id"] if first else ""
+            print(f"{label:<34} {repr(phrase):<18} {'':>9} {'':>7} {'':>6}   {c.get('in_context', 0):>6}/{n:<3} {c.get('said', 0):>2}/{n:<3}")
+            first = False
 
 
 def report(meta, rows):
@@ -156,6 +250,12 @@ def report(meta, rows):
     total_runs = sum(row["runs"] for row in rows)
     total_passed = sum(row["passed"] for row in rows)
     print(f"{total_passed}/{total_runs} runs passed")
+    k = min(row["runs"] for row in rows)
+    any_pass = sum(row["passed"] > 0 for row in rows)
+    all_pass = sum(row["passed"] == row["runs"] for row in rows)
+    print(f"pass@{k} (at least one run passed): {any_pass}/{len(rows)} cases   "
+          f"pass^{k} (every run passed): {all_pass}/{len(rows)} cases")
+    report_stages(rows)
 
     for row in rows:
         if row["passed"] == row["runs"]:
