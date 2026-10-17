@@ -15,7 +15,7 @@ RUNS_FILE = ROOT / "data" / "traces" / "runs.jsonl"
 
 SMALL_MODELS = ("-mini", "-nano")
 FREE_TOKENS = {"small": 2_500_000, "large": 250_000}
-TOKENS_PER_RUN = 70_000
+TOKENS_PER_RUN = 85_000
 
 
 def cited_numbers(answer):
