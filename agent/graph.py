@@ -88,7 +88,9 @@ def loop_note(query, kind):
 def search(query: str, kind: Literal["any", "pr", "issue"] = "any") -> str:
     """Find pull requests and issues in langchain-ai/langgraph whose text contains every word of the query.
 
-    Returns up to 10 matches, each with number, kind (pr or issue), state and title. May add a note about the search itself.
+    Returns up to 10 matches, each with number, kind (pr or issue), state, title and a snippet: the opening of its
+    description, which often says what a pull request changes when its title does not. May add a note about the
+    search itself.
 
     Args:
         query: Keywords only. Every word must appear in a result, so each extra word removes matches.

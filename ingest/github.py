@@ -159,6 +159,22 @@ def get_comments(n):
 
 
 SEARCH_KINDS = {"any": "", "pr": "is:pr ", "issue": "is:issue "}
+SNIPPET_CHARS = 200
+CODE_BLOCK = re.compile(r"```.*?```", re.DOTALL)
+HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
+ITEM_URL = re.compile(rf"https://github\.com/{REPO}/(?:pull|issues)/(\d+)\S*")
+OTHER_URL = re.compile(r"https?://\S+")
+SKIPPED_LINE = re.compile(r"^\s*(#|- \[[ xX]\]|\*\*|>)")
+
+
+def snippet(body):
+    text = HTML_COMMENT.sub(" ", CODE_BLOCK.sub(" ", body or ""))
+    lines = [line for line in text.splitlines() if line.strip() and not SKIPPED_LINE.match(line)]
+    text = OTHER_URL.sub("", ITEM_URL.sub(r"#\1", " ".join(lines)))
+    text = " ".join(text.split())
+    if len(text) <= SNIPPET_CHARS:
+        return text
+    return text[:SNIPPET_CHARS].rsplit(" ", 1)[0] + "…"
 
 
 def search(query, kind="any", limit=10):
@@ -176,6 +192,7 @@ def search(query, kind="any", limit=10):
             "kind": "pr" if "pull_request" in item else "issue",
             "state": item["state"],
             "title": item["title"],
+            "snippet": snippet(item.get("body")),
         }
         for item in result.get("items", [])
     ], cache_hit
