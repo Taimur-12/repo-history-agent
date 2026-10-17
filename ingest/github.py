@@ -186,16 +186,20 @@ def search(query, kind="any", limit=10):
     except requests.HTTPError as exc:
         return error_message(exc, "search", query), False
 
-    return [
-        {
-            "number": item["number"],
-            "kind": "pr" if "pull_request" in item else "issue",
-            "state": item["state"],
-            "title": item["title"],
-            "snippet": snippet(item.get("body")),
-        }
-        for item in result.get("items", [])
-    ], cache_hit
+    return [search_result(item) for item in result.get("items", [])], cache_hit
+
+
+def search_result(item):
+    found = {
+        "number": item["number"],
+        "kind": "pr" if "pull_request" in item else "issue",
+        "state": item["state"],
+    }
+    if "pull_request" in item:
+        found["merged"] = bool(item["pull_request"].get("merged_at"))
+    found["title"] = item["title"]
+    found["snippet"] = snippet(item.get("body"))
+    return found
 
 
 def split_tag(tag):

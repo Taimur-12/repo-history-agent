@@ -89,8 +89,8 @@ def search(query: str, kind: Literal["any", "pr", "issue"] = "any") -> str:
     """Find pull requests and issues in langchain-ai/langgraph whose text contains every word of the query.
 
     Returns up to 10 matches, each with number, kind (pr or issue), state, title and a snippet: the opening of its
-    description, which often says what a pull request changes when its title does not. May add a note about the
-    search itself.
+    description, which often says what a pull request changes when its title does not. Pull requests also have
+    `merged`: a closed pull request with `merged: false` never landed. May add a note about the search itself.
 
     Args:
         query: Keywords only. Every word must appear in a result, so each extra word removes matches.
