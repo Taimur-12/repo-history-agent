@@ -117,6 +117,17 @@ V5_2 = V5_1.replace(
 )
 
 
+V5_3 = V5_2.replace(
+    "- If you could not establish something, say so plainly instead of guessing.\n",
+    "- Sources can disagree about a value such as a default, a limit or a version. A pull request's description "
+    "can be wrong about its own code, so a later change that names the old value is better evidence. If two "
+    "sources give different values for what looks like the same setting, treat that as a disagreement, not as "
+    "two different settings, unless a source says they are different. When sources disagree, give the value "
+    "from the most recent merged change and say which sources disagree.\n"
+    "- If you could not establish something, say so plainly instead of guessing.\n",
+)
+
+
 PROMPTS = {
     "v0": V0,
     "v1": V1,
@@ -126,6 +137,7 @@ PROMPTS = {
     "v5": V5,
     "v5.1": V5_1,
     "v5.2": V5_2,
+    "v5.3": V5_3,
 }
 
 DEFAULT_PROMPT = "v0"
