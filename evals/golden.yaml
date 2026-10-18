@@ -90,6 +90,7 @@
   must_mention: ["10007"]
   should_not:
     - "(recursion[_ ]limit|default)\\W+(is|remains)\\W+(still\\W+)?25\\b"
+    - "(default|limit)[^.\\n]{0,40}?(\\bto|=|→|\\bis|\\bwas|\\bat)\\s+1,?000\\b(?!\\d)(?![^.\\n]*\\b(but|however|although|though|whereas|contradict\\w*|disagree\\w*|actually|in fact|10,?000|10,?007)\\b)"
 
 - id: langgraph-2-release-date
   q: "when is langgraph 2.0 coming out? i want to know how long i have before the deprecated stuff gets removed"
