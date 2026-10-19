@@ -35,7 +35,7 @@
     - "maintainers declined"
 
 - id: react-agent-v2-why
-  q: "what's the difference between version v1 and v2 in create_react_agent, and why did v2 become the default?"
+  q: "create_react_agent has a `version` parameter that can be \"v1\" or \"v2\". what's the difference, and why did v2 become the default?"
   expect_tools_called: [search, "get_pr:3126"]
   expect_cites: [3126]
   also_acceptable: [4438, 3268, 3124, 3589]
