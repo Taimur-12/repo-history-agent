@@ -68,62 +68,20 @@ def key_of(call):
     return search_key(args[0], kind)
 
 
-def search_streak(calls):
-    streak = 0
-    for call in reversed(calls):
-        if call["tool"] != "search":
-            break
-        streak += 1
-    return streak
-
-
 def loop_note(query, kind):
     calls = earlier_calls()
     if any(c["tool"] == "search" and key_of(c) == search_key(query, kind) for c in calls):
         return ("You already ran this search earlier (same words, same kind), so these are the same results. "
                 "Open a promising result with get_pr or get_issue, or search for something different.")
-    streak = search_streak(calls)
+    streak = 0
+    for call in reversed(calls):
+        if call["tool"] != "search":
+            break
+        streak += 1
     if streak >= SEARCH_STREAK:
         return (f"This is search number {streak + 1} in a row without opening any result. Titles alone rarely "
                 "answer the question: open the most promising result with get_pr or get_issue before searching again.")
     return None
-
-
-SEARCH_LIMIT = 6
-SHOWN_UNOPENED = 15
-OPENING_TOOLS = ("get_pr", "get_issue", "get_timeline", "get_comments")
-
-
-def unopened_results(calls):
-    opened = {int(plain(c["args"][0])) for c in calls if c["tool"] in OPENING_TOOLS and c["args"]}
-    seen, best, counts = {}, {}, {}
-    for call in calls:
-        if call["tool"] != "search" or call.get("tool_error") or call.get("failed"):
-            continue
-        _, kind = key_of(call)
-        results, _ = github.search(plain(call["args"][0]), kind)
-        if isinstance(results, str):
-            continue
-        for position, item in enumerate(results):
-            number = item["number"]
-            if number in opened:
-                continue
-            seen.setdefault(number, item)
-            best[number] = min(best.get(number, position), position)
-            counts[number] = counts.get(number, 0) + 1
-    ranked = sorted(seen, key=lambda n: (best[n], -counts[n]))
-    return [seen[n] for n in ranked[:SHOWN_UNOPENED]]
-
-
-def search_refusal(calls):
-    return json.dumps({
-        "refused": (f"Search not run: this would be search number {search_streak(calls) + 1} in a row without "
-                    "opening anything. Below are results from your earlier searches that you have not opened. "
-                    "Open the ones most relevant to the question "
-                    "with get_pr or get_issue; you can search again after that. If none of them is relevant, "
-                    "stop and answer with what you have, saying what you searched for and could not find."),
-        "unopened": unopened_results(calls),
-    }, default=str)
 
 
 @tool(parse_docstring=True)
@@ -138,12 +96,6 @@ def search(query: str, kind: Literal["any", "pr", "issue"] = "any") -> str:
         query: Keywords only. Every word must appear in a result, so each extra word removes matches.
         kind: Which items to return. "pr" returns only pull requests, "issue" only issues, "any" both.
     """
-    calls = earlier_calls()
-    if search_streak(calls) >= SEARCH_LIMIT:
-        active = current_run.get()
-        if active is not None:
-            active["searches_refused"] = active.get("searches_refused", 0) + 1
-        return search_refusal(calls)
     repeat = loop_note(query, kind)
     results, _ = traced_tools.search(query, kind)
     if isinstance(results, str):
@@ -352,7 +304,6 @@ def ask(question, case_id=None, agent=None, prompt_version=DEFAULT_PROMPT, reaso
         record["reasoning"] = reasoning or "default"
         record["check"] = check
         record["checks_fired"] = []
-        record["searches_refused"] = 0
         try:
             state = agent.invoke(
                 {"messages": [HumanMessage(question)], "steps": 0, "out_of_steps": False, "checked": False},
