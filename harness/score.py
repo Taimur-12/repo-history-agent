@@ -44,9 +44,22 @@ def score_tools(case, calls):
     return sorted(tool for tool, count in wanted.items() if actual[tool] < count)
 
 
+VERSION_LIKE = re.compile(r"\d+(\.\d+)*")
+
+
+def mention_pattern(phrase):
+    if VERSION_LIKE.fullmatch(phrase):
+        return rf"(?<![\d.]){re.escape(phrase)}(\.\d+)*(?!\d)"
+    start = r"\b" if re.match(r"\w", phrase) else ""
+    return start + re.escape(phrase)
+
+
+def mentions(phrase, text):
+    return re.search(mention_pattern(phrase), text or "", re.IGNORECASE) is not None
+
+
 def score_mentions(case, answer):
-    lowered = (answer or "").lower()
-    return [phrase for phrase in case.get("must_mention", []) if phrase.lower() not in lowered]
+    return [phrase for phrase in case.get("must_mention", []) if not mentions(phrase, answer)]
 
 
 def score_match_any(case, answer):
@@ -153,7 +166,7 @@ def score_stages(case, record):
         for n in target_items(case)
     }
     facts = {
-        phrase: {"in_context": phrase.lower() in context, "said": phrase.lower() in answer}
+        phrase: {"in_context": mentions(phrase, context), "said": mentions(phrase, answer)}
         for phrase in case.get("must_mention", [])
     }
     vetted = set(case.get("expect_cites", [])) | set(case.get("also_acceptable", []))
