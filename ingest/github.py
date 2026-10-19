@@ -161,6 +161,38 @@ def error_message(exc, kind, n):
     return f"github returned status {status} for {kind} {n}"
 
 
+NOT_CODE = re.compile(
+    r"(^|/)(tests?|docs?|examples?)/|(^|/)test_[^/]*$|\.(md|mdx|ipynb|lock|txt|toml|cfg|ini|json|ya?ml)$|Makefile$"
+)
+MAX_CHANGED_LINES = 40
+MAX_LINE_CHARS = 160
+
+
+def changed_lines(patch):
+    return [line[:MAX_LINE_CHARS] for line in patch.splitlines() if line[:1] in "+-" and line[1:].strip()]
+
+
+def code_changes(n):
+    try:
+        files, cache_hit = fetch(f"/repos/{REPO}/pulls/{n}/files?per_page=100")
+    except requests.HTTPError:
+        return None, False
+
+    shown, other, used = [], [], 0
+    for file in files:
+        lines = changed_lines(file.get("patch") or "")
+        room = MAX_CHANGED_LINES - used
+        if NOT_CODE.search(file["filename"]) or not lines or room <= 0:
+            other.append(file["filename"])
+            continue
+        entry = {"file": file["filename"], "additions": file["additions"], "deletions": file["deletions"], "lines": lines[:room]}
+        if len(lines) > room:
+            entry["more_lines"] = len(lines) - room
+        shown.append(entry)
+        used += len(entry["lines"])
+    return {"code": shown, "other_files": other}, cache_hit
+
+
 def get_pr(n):
     try:
         pr, cache_hit = fetch(f"/repos/{REPO}/pulls/{n}")
@@ -186,8 +218,10 @@ def get_pr(n):
         "review_comment_count": pr.get("review_comments"),
         "merge_commit_sha": pr.get("merge_commit_sha"),
     }
+    changes, changes_hit = code_changes(n)
+    result["code_changes"] = changes
     if not PR_REVIEWS:
-        return result, cache_hit
+        return result, cache_hit and changes_hit
 
     try:
         reviews, reviews_hit = review_comments(n)
@@ -198,7 +232,7 @@ def get_pr(n):
         result["review_comments"] = shown
     if more:
         result["more_review_comments"] = f"{more} more review entries; get_comments shows all of them"
-    return result, cache_hit and reviews_hit
+    return result, cache_hit and reviews_hit and changes_hit
 
 
 PR_REVIEW_CHARS = 2000
