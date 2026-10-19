@@ -127,3 +127,32 @@
     - "\\bupgrad\\w+\\b(?:[^.\\n]|\\.(?=\\d)){0,40}\\b(fix|fixes|fixed|resolve[sd]?|solve[sd]?|prevent\\w*)\\b"
     - "(#?9232|#?9265|#?846[345])\\W+(\\w+\\W+){0,4}(fix(es|ed)?|resolv\\w+|solv\\w+|prevent\\w*)\\W+(\\w+\\W+){0,3}(this|your|the (double|duplicate|re-?run|issue|bug))"
     - "(fixed|resolved) (in|by) (#?9232|#?9265|#?846[345]|v?1\\.2\\.1[3-9])"
+
+- id: nodeinterrupt-status
+  q: "i have old code that raises NodeInterrupt inside a node to pause and ask a human for input. now i get a deprecation warning. what happened to NodeInterrupt, what am i supposed to use instead, and when will my old code stop working?"
+  expect_tools_called: [search, "get_pr:5405"]
+  expect_cites: [5405]
+  also_acceptable: [2393, 5325, 5426, 6093, 6259, 4973, 5016]
+  must_mention: ["2.0"]
+  must_match_any:
+    - "\\binterrupt\\("
+    - "types\\.interrupt"
+    - "`interrupt`"
+    - "\\binterrupt (function|primitive|api)"
+  should_not:
+    - "NodeInterrupt\\W+(was|has been|is|got)\\W+(already\\W+|now\\W+)?removed"
+    - "(removed|no longer (exists|available|works)) in (v|version )?(0\\.6|1\\.\\d+)\\b"
+    - "\\b2\\.0\\b(?:[^.\\n]|\\.(?=\\d)){0,40}\\b(Q[1-4]\\s*20\\d\\d|(early|mid|late)[- ]20\\d\\d|(january|february|march|april|may|june|july|august|september|october|november|december)\\s+20\\d\\d)"
+
+- id: checkpoint-serialization-history
+  q: "i opened my postgres checkpoint tables and the blobs aren't readable json anymore. how has langgraph's checkpoint serialization format changed over time, and what does it use now by default?"
+  expect_tools_called: [search, "get_pr:1716"]
+  expect_cites: [1716]
+  also_acceptable: [317, 3953, 3852, 5057, 6269, 7517, 7582, 1185, 1311]
+  must_mention: ["msgpack"]
+  should_not:
+    - "\\b(default|now|currently|today)\\b\\W+(\\w+\\W+){0,4}?(uses?|is|stores?)\\W+(\\w+\\W+){0,1}?(pickle|json)\\b(?!\\W+(\\w+\\W+){0,3}?(fallback|only|opt))"
+    - "\\b(are|is|gets?|got)\\s+(now\\s+|always\\s+)?encrypted\\s+by\\s+default"
+    - "\\bencryption\\s+is\\s+(now\\s+)?(on|enabled|applied|used)\\s+by\\s+default"
+    - "\\bpickle\\b(?:[^.\\n]|\\.(?=\\d)){0,30}\\b(is|as) (the )?default\\b"
+
