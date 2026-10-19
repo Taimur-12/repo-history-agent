@@ -1,4 +1,6 @@
 - id: pending-sends-serialization
+  type: prior-art
+  verified_by: 'question-candidates.md case 1; release mapping checked against git history 2026-10-20 (findings, lessons 27)'
   q: "why do i get 'Object of type Send is not JSON serializable' with PostgresSaver"
   expect_tools_called: [search, "get_pr:5106"]
   expect_cites: [5106, 5199]
@@ -9,6 +11,8 @@
     - "upgrade to 5\\.0\\.0"
 
 - id: time-travel-interrupt-regression
+  type: prior-art
+  verified_by: 'question-candidates.md case 2'
   q: "time travel to a subgraph checkpoint with an interrupt gives me the wrong state - is this fixed"
   expect_tools_called: [search, "get_timeline:7498"]
   expect_cites: [7498, 7592, 8458]
@@ -21,6 +25,8 @@
     - "maintainers declined"
 
 - id: time-travel-interrupt-verbose
+  type: prior-art
+  verified_by: 'question-candidates.md case 3'
   q: "ok so im using interrupt() inside a subgraph and when i try to go back to an earlier checkpoint with time travel the state i get back is not what i expect, it looks like it replays the whole subgraph from the start instead of resuming where i pointed it. is this a known thing, did they ever fix it or am i doing something wrong"
   expect_tools_called: [search, "get_timeline:7498"]
   expect_cites: [7498, 7592, 8458]
@@ -33,6 +39,8 @@
     - "maintainers declined"
 
 - id: react-agent-v2-why
+  type: why-like-this
+  verified_by: 'question-candidates.md case 4; wording fixed 2026-10-19 (findings "Case set changes")'
   q: "create_react_agent has a `version` parameter that can be \"v1\" or \"v2\". what's the difference, and why did v2 become the default?"
   expect_tools_called: [search, "get_pr:3126"]
   expect_cites: [3126]
@@ -48,6 +56,8 @@
     - "never (been )?released"
 
 - id: toolnode-deprecation-warning
+  type: which-way-current
+  verified_by: 'question-candidates.md case 5'
   q: "every time i import ToolNode from langgraph.prebuilt i get a deprecation warning. is ToolNode deprecated, should i switch to langchain?"
   expect_tools_called: [search, "get_pr:6669"]
   expect_cites: [6669]
@@ -57,6 +67,8 @@
     - "ToolNode (is|has been) deprecated"
 
 - id: messagegraph-status
+  type: which-way-current
+  verified_by: 'question-candidates.md case 6; corrected 2026-10-20: never missing from any release'
   q: "i'm upgrading an old project that uses MessageGraph and i read somewhere it was removed. can i still use it, and what should i use instead?"
   expect_tools_called: [search, "get_pr:5843"]
   expect_cites: [5843, 4875]
@@ -67,6 +79,8 @@
     - "MessageGraph is (not|no longer) available"
 
 - id: node-timeouts-retry
+  type: evolution
+  verified_by: 'question-candidates.md case 7'
   q: "which langgraph version lets me set a timeout on individual nodes, and if i put a TimeoutPolicy and a RetryPolicy on the same node will it actually retry when it times out?"
   expect_tools_called: [search, "get_pr:7659"]
   expect_cites: [7631, 7659]
@@ -77,6 +91,8 @@
     - "(timeouts?|NodeTimeoutError) (are|is) not retried by default"
 
 - id: context-api-migration
+  type: which-way-current
+  verified_by: 'question-candidates.md case 8'
   q: "i have old code that passes user_id through config['configurable'] and sets config_schema on my StateGraph. is that deprecated now, and what should i use instead?"
   expect_tools_called: [search, "get_pr:5243"]
   expect_cites: [5243]
@@ -87,6 +103,8 @@
     - "config_schema(`)?\\s*(is|has been|was) removed"
 
 - id: recursion-limit-default
+  type: evolution
+  verified_by: 'question-candidates.md case 9; diffs of #6676 and #7355'
   q: "my graph used to stop with a recursion limit error after 25 steps but now long runs just keep going. did the default recursion limit change? what is it now and why?"
   expect_tools_called: [search, "get_pr:6676", "get_pr:7355"]
   expect_cites: [6676, 7355]
@@ -97,6 +115,8 @@
     - "(default|limit)(?:[^.\\n]|\\.(?=\\d)){0,40}?(\\bto|=|→|\\bis|\\bwas|\\bat)\\s+1,?000\\b(?!\\d)(?!(?:[^.\\n]|\\.(?=\\d))*\\b(but|however|although|though|whereas|while|contradict\\w*|disagree\\w*|actually|in fact)\\b)"
 
 - id: langgraph-2-release-date
+  type: refuse
+  verified_by: 'question-candidates.md case 10'
   q: "when is langgraph 2.0 coming out? i want to know how long i have before the deprecated stuff gets removed"
   expect_tools_called: [search]
   expect_cites: []
@@ -111,6 +131,8 @@
     - "\\b(release[sd]?|ship(s|ped)?|launch(es|ed)?|coming out|come out|arrive[sd]?)\\b(?:[^.\\n]|\\.(?=\\d)){0,40}\\b(Q[1-4]\\s*20\\d\\d|(early|mid|late)[- ]20\\d\\d|(january|february|march|april|may|june|july|august|september|october|november|december)\\s+20\\d\\d)"
 
 - id: tool-rerun-after-error
+  type: prior-art
+  verified_by: 'findings 2026-10-19 "Case set changes"'
   q: "my tool calls a payment API. the call timed out and the graph raised an error. when i invoke it again with the same thread_id to resume, it runs the tool again and the customer gets charged twice. is this a known bug, and has it been fixed in langgraph?"
   expect_tools_called: [search]
   expect_cites: [9185]
@@ -133,6 +155,8 @@
     - "(fixed|resolved) (in|by) (#?9232|#?9265|#?846[345]|v?1\\.2\\.1[3-9])"
 
 - id: nodeinterrupt-status
+  type: evolution
+  verified_by: 'findings 2026-10-19 "Two evolution cases"; errors.py and warnings.py on main'
   q: "i have old code that raises NodeInterrupt inside a node to pause and ask a human for input. now i get a deprecation warning. what happened to NodeInterrupt, what am i supposed to use instead, and when will my old code stop working?"
   expect_tools_called: [search, "get_pr:5405"]
   expect_cites: [5405]
@@ -149,6 +173,8 @@
     - "\\b2\\.0\\b(?:[^.\\n]|\\.(?=\\d)){0,40}\\b(Q[1-4]\\s*20\\d\\d|(early|mid|late)[- ]20\\d\\d|(january|february|march|april|may|june|july|august|september|october|november|december)\\s+20\\d\\d)"
 
 - id: checkpoint-serialization-history
+  type: evolution
+  verified_by: 'findings 2026-10-19 "Two evolution cases"; jsonplus.py on main'
   q: "i opened my postgres checkpoint tables and the blobs aren't readable json anymore. how has langgraph's checkpoint serialization format changed over time, and what does it use now by default?"
   expect_tools_called: [search, "get_pr:1716"]
   expect_cites: [1716]
@@ -161,6 +187,8 @@
     - "\\bpickle\\b(?:[^.\\n]|\\.(?=\\d)){0,30}\\b(is|as) (the )?default\\b"
 
 - id: postgres-driver-why
+  type: refuse
+  verified_by: 'findings 2026-10-19 "Hard refusal case"; 63 threads scanned for maintainer comments'
   q: "why does langgraph-checkpoint-postgres use psycopg 3 instead of asyncpg? we use asyncpg everywhere else in our stack. and is asyncpg support coming?"
   expect_tools_called: [search]
   expect_cites: [6453]
