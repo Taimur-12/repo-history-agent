@@ -138,3 +138,14 @@ langgraphjs-remotegraph-context:
   - "#6497 fixes this for you: it pops thread_id from configurable. Make sure you're on 1.0.4 or later."
   - "This is a known server limitation. Pass thread_id in configurable and leave context empty."
   - "The JS repo isn't something I can check, but upgrading to 1.0.4 fixes it (#6497)."
+sdk-encryption-why:
+  pass:
+  - "#6595 (sdk 0.3.1) removed model-specific handlers like encrypt.json.thread because langgraph-api merges JSON across model types in SQL, so data encrypted as one model type might be decrypted as another. Moving fields under __encrypted__ causes data loss on PATCH-style partial updates, so the server now checks that keys are preserved."
+  - "Per #6595, the __encrypted__ pattern loses data when partial updates are merged. Use @encryption.encrypt.json and keep the keys."
+  - "#6595: kv pairs move across model types during SQL merges, so per-model encryption couldn't be guaranteed to round-trip."
+  fail:
+  - "#6595 removed it for security reasons: model-specific handlers leaked keys."
+  - "Model-specific handlers are still supported; you just need to register them differently (#6595). PATCH merges are unaffected."
+  - "It was changed for performance (#6595), since per-model handlers were slow, and patch handling was simplified."
+  - "The SDK changed its decorator names in a refactor. See #6595."
+  - "Per-model handlers were dropped and keys must stay the same, because of data loss on partial updates."

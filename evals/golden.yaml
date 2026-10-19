@@ -220,3 +220,18 @@
     - "\\b(upgrad\\w+|update|bump\\w*|install)\\b(?:[^.\\n]|\\.(?=\\d)){0,60}?\\b(to|>=?)\\s*v?1\\.0\\.[4-9]\\b(?![^.\\n]*\\bpython\\b)"
     - "(#?6497)\\b(?:[^.\\n]|\\.(?=\\d)){0,60}\\b(fix(es|ed)?|resolv\\w+)\\b(?:[^.\\n]|\\.(?=\\d)){0,30}\\b(it|this) for (you|js|javascript|langgraph\\.?js)\\b"
 
+- id: sdk-encryption-why
+  type: why-like-this
+  verified_by: 'findings 2026-10-20 "SDK encryption case"; sdk==0.3.0 vs 0.3.1 source compared, #6595 in 0.3.1 by git history'
+  q: "after upgrading langgraph-sdk, my `@encryption.encrypt.json.thread` handler stopped working, and my custom json encryptor that moves everything under one `__encrypted__` key gets rejected now. why did they change this?"
+  expect_tools_called: [search, "get_pr:6595"]
+  expect_cites: [6595]
+  also_acceptable: [6610]
+  must_match_any:
+    - "\\b(data loss|los(e|es|ing|t) (the |your |some )?data|data (is |gets |would be )?lost|drop(s|ped)? (fields|keys|data))\\b"
+    - "\\b(patch|partial[- ]updates?)\\b"
+    - "\\bmerg\\w*\\b(?:[^.\\n]){0,80}\\bmodel[- ]?types?\\b|\\bmodel[- ]?types?\\b(?:[^.\\n]){0,80}\\bmerg\\w*"
+  should_not:
+    - "(encrypt\\.json\\.thread|model[- ]specific (json )?(encryption )?handlers?|per[- ]model (json )?(encryption )?handlers?)\\b(?:[^.\\n]|\\.(?=\\w)){0,40}\\b(still (works?|supported|available)|(is|are) (still )?supported|works? again)"
+    - "\\b(because|for|due to)\\s+(\\w+\\s+){0,3}(security|performance|speed)\\b"
+
