@@ -126,6 +126,13 @@ def target_items(case):
     return sorted(items)
 
 
+SEEN_NUMBER = re.compile(r'"(?:number|reverted_by)": (\d+)|#(\d{3,6})|/(?:pull|issues)/(\d+)')
+
+
+def numbers_in(context):
+    return {int(next(g for g in match if g)) for match in SEEN_NUMBER.findall(context)}
+
+
 def score_stages(case, record):
     surfaced, opened, seen = set(), set(), []
     for call in record.get("calls", []):
@@ -149,7 +156,13 @@ def score_stages(case, record):
         phrase: {"in_context": phrase.lower() in context, "said": phrase.lower() in answer}
         for phrase in case.get("must_mention", [])
     }
-    return {"items": items, "facts": facts}
+    vetted = set(case.get("expect_cites", [])) | set(case.get("also_acceptable", []))
+    return {
+        "items": items,
+        "facts": facts,
+        "unseen_cites": sorted(cited - numbers_in(context)),
+        "unvetted_cites": sorted(cited - vetted),
+    }
 
 
 def score(case, record):
@@ -196,6 +209,8 @@ def summarise(results):
         unsaid = Counter(phrase for r in runs for phrase in r["missing_mentions"])
         banned = Counter(pattern for r in runs for pattern in r["forbidden_hits"])
         unmatched = Counter(item for r in runs for item in r.get("missing_any", []))
+        unseen = Counter(num for r in runs for num in r["stages"].get("unseen_cites", []))
+        unvetted = Counter(num for r in runs for num in r["stages"].get("unvetted_cites", []))
         stages = {"items": {}, "facts": {}}
         for r in runs:
             for group in ("items", "facts"):
@@ -216,6 +231,8 @@ def summarise(results):
             "missing_mentions": dict(unsaid),
             "forbidden_hits": dict(banned),
             "missing_any": dict(unmatched),
+            "unseen_cites": dict(unseen),
+            "unvetted_cites": dict(unvetted),
             "stages": {group: {key: dict(c) for key, c in found.items()} for group, found in stages.items()},
         })
     return rows
@@ -238,6 +255,15 @@ def report_stages(rows):
             first = False
 
 
+def report_citations(rows):
+    unseen = {row["case_id"]: row["unseen_cites"] for row in rows if row["unseen_cites"]}
+    unvetted = sum(len(row["unvetted_cites"]) for row in rows)
+    print(f"\ncited numbers that appear in no tool result (possible fabrication, not scored): {sum(map(len, unseen.values()))}")
+    for case_id, numbers in unseen.items():
+        print(f"  {case_id:<34} " + ", ".join(f"#{n} x{c}" for n, c in sorted(numbers.items())))
+    print(f"distinct citations outside expect_cites + also_acceptable (saved in results, not scored): {unvetted}")
+
+
 def report(meta, rows):
     print()
     print(f"model={meta['model']}  prompt={meta['prompt_version']}  reasoning={meta['reasoning']}  repeat={meta['repeat']}")
@@ -256,6 +282,7 @@ def report(meta, rows):
     print(f"pass@{k} (at least one run passed): {any_pass}/{len(rows)} cases   "
           f"pass^{k} (every run passed): {all_pass}/{len(rows)} cases")
     report_stages(rows)
+    report_citations(rows)
 
     for row in rows:
         if row["passed"] == row["runs"]:
