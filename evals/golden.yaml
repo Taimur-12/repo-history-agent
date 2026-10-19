@@ -90,7 +90,7 @@
   must_mention: ["10007"]
   should_not:
     - "(recursion[_ ]limit|default)\\W+(is|remains)\\W+(still\\W+)?25\\b"
-    - "(default|limit)[^.\\n]{0,40}?(\\bto|=|→|\\bis|\\bwas|\\bat)\\s+1,?000\\b(?!\\d)(?![^.\\n]*\\b(but|however|although|though|whereas|contradict\\w*|disagree\\w*|actually|in fact|10,?000|10,?007)\\b)"
+    - "(default|limit)(?:[^.\\n]|\\.(?=\\d)){0,40}?(\\bto|=|→|\\bis|\\bwas|\\bat)\\s+1,?000\\b(?!\\d)(?!(?:[^.\\n]|\\.(?=\\d))*\\b(but|however|although|though|whereas|while|contradict\\w*|disagree\\w*|actually|in fact)\\b)"
 
 - id: langgraph-2-release-date
   q: "when is langgraph 2.0 coming out? i want to know how long i have before the deprecated stuff gets removed"
@@ -124,6 +124,6 @@
     - "(still|currently) (re-?runs?|re-?executes?|runs? (it|the tool) again)"
   should_not:
     - "\\b(this|it|the (issue|bug|problem|double[- ]charge|re-?run))\\W+(has been|was|is( now)?|got)\\W+(fixed|resolved|solved)"
-    - "\\bupgrad\\w+\\b[^.\\n]{0,40}\\b(fix|fixes|fixed|resolve[sd]?|solve[sd]?|prevent\\w*)\\b"
+    - "\\bupgrad\\w+\\b(?:[^.\\n]|\\.(?=\\d)){0,40}\\b(fix|fixes|fixed|resolve[sd]?|solve[sd]?|prevent\\w*)\\b"
     - "(#?9232|#?9265|#?846[345])\\W+(\\w+\\W+){0,4}(fix(es|ed)?|resolv\\w+|solv\\w+|prevent\\w*)\\W+(\\w+\\W+){0,3}(this|your|the (double|duplicate|re-?run|issue|bug))"
     - "(fixed|resolved) (in|by) (#?9232|#?9265|#?846[345]|v?1\\.2\\.1[3-9])"
