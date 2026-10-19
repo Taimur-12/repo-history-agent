@@ -78,7 +78,7 @@ def without_quotes(text):
     return QUOTED.sub(" ", text or "")
 
 
-CLAUSE_START = re.compile(r"[.!?;\n]")
+CLAUSE_START = re.compile(r"[.!?;\n]|,\s*(?:and|but|so|while|whereas)\b|\b(?:but|whereas)\b|\b(?:no|yes)\s*[,:—-]", re.IGNORECASE)
 NEGATION = re.compile(r"\b(no|not|never|nothing|none|neither|nor|without|cannot|isn't|aren't|wasn't|weren't|doesn't|didn't|don't|hasn't|haven't|can't|won't)\b", re.IGNORECASE)
 
 
@@ -89,7 +89,14 @@ def negated(text, start):
 
 
 def claims(pattern, text):
-    return any(not negated(text, m.start()) for m in re.finditer(pattern, text, re.IGNORECASE))
+    negative_claim = bool(NEGATION.search(pattern))
+    for m in re.finditer(pattern, text, re.IGNORECASE):
+        if negated(text, m.start()):
+            continue
+        if not negative_claim and NEGATION.search(m.group(0)):
+            continue
+        return True
+    return False
 
 
 def score_forbidden(case, answer):
