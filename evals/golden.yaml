@@ -40,6 +40,12 @@
   expect_cites: [3126]
   also_acceptable: [4438, 3268, 3124, 3589]
   must_mention: ["interrupt"]
+  must_match_any:
+    - "`Send`|\\bSend API\\b|\\b(via|using|with|through) (the )?`?Send`?\\b(?! for each)"
+    - "\\b(each|every|individual|single|separate|one) tool[ _]calls?\\b(?:[^.\\n]){0,60}\\b(sent|dispatched|distributed|routed|fan(ned)? out|gets? (its|a) own)"
+    - "\\b(per|one)[- ]tool[- ]call\\b"
+    - "\\btool_call_parallelism\\b"
+    - "\\b(distribut\\w+|dispatch\\w*|fan\\w* out)\\b(?:[^.\\n]){0,40}\\btool calls?\\b"
   should_not:
     - "never (been )?released"
 
