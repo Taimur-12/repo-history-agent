@@ -156,3 +156,20 @@
     - "\\bencryption\\s+is\\s+(now\\s+)?(on|enabled|applied|used)\\s+by\\s+default"
     - "\\bpickle\\b(?:[^.\\n]|\\.(?=\\d)){0,30}\\b(is|as) (the )?default\\b"
 
+- id: postgres-driver-why
+  q: "why does langgraph-checkpoint-postgres use psycopg 3 instead of asyncpg? we use asyncpg everywhere else in our stack. and is asyncpg support coming?"
+  expect_tools_called: [search]
+  expect_cites: [6453]
+  also_acceptable: [7692, 1236, 3716]
+  must_match_any:
+    - "\\b(no|isn't any|is no|not any)\\s+(stated |documented |recorded |explicit |public |official )?(reason|rationale|explanation|justification)"
+    - "\\b(not|never|n't)\\s+(been\\s+)?(explained|discussed|documented|stated|given|recorded|justified|explain(ed)?)\\b"
+    - "(couldn't|could not|can't|cannot|didn't|did not)\\s+find\\s+(any\\s+|a\\s+)?(stated\\s+|documented\\s+)?(reason|rationale|explanation|discussion|justification)"
+    - "\\b(doesn't|does not|don't|do not)\\s+(say|explain|record|state|document|give)\\b"
+  should_not:
+    - "\\b(chose|picked|selected|went with|use[sd]?|prefer(red)?)\\s+(psycopg\\w*)(\\s*3)?\\s+(\\w+\\s+){0,4}?(because|since|due to)\\b"
+    - "\\bpsycopg\\w*(\\s*3)?\\s+(was|is)\\s+(chosen|picked|selected|preferred|used)\\s+(because|since|for|due)\\b"
+    - "\\b(asyncpg|#?6453|#?7692)\\b(?:[^.\\n]|\\.(?=\\d)){0,60}\\b(was|were|has been|have been|got)\\s+(rejected|declined|turned down|refused)"
+    - "\\b(now\\s+)?supports\\s+asyncpg\\b"
+    - "\\basyncpg\\s+support\\s+(was|has been|is)\\s+(added|merged|available|released)"
+
