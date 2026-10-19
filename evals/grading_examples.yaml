@@ -1,0 +1,128 @@
+pending-sends-serialization:
+  pass:
+  - 'This comes from how checkpoints stored Sends. #5106 added a migration for pending_sends and #5199 kept 0.4.x compatible; upgrading to 0.5 resolves it. A commenter''s "5.0.0" meant 0.5.0.'
+  - 'The pending_sends field moved in 0.5.0 (#5106, #5199). Upgrade to langgraph 0.5 or later.'
+  fail:
+  - 'This was fixed in 5.0.0 (#5106, #5199): pending_sends moved. Upgrade to 5.0.0.'
+  - 'Upgrade to 5.0.0, which migrates pending_sends (#5106, #5199) and 0.5 behaviour.'
+  - '#5106 and #5199 touch pending_sends, but the JSON error itself is in your code.'
+time-travel-interrupt-regression:
+  pass:
+  - '#7498 fixed the original replay bug in 1.1.7, but it caused a regression: #7592 and #8458 are still open, and the fix attempt #8597 was auto-closed by a bot without review.'
+  - 'Not fully. 1.1.7 shipped #7498, which introduced a regression tracked in #8458 and #7592, both open.'
+  fail:
+  - 'Yes, this was fixed in 1.1.7 by #7498. #7592 and #8458 mention a regression but it''s no longer an issue.'
+  - 'It''s fixed in 1.1.7 (#7498). See #7592 and #8458 for the regression history.'
+  - '#7498 shipped in 1.1.7 and caused a regression (#7592, #8458). A fix was proposed but the fix was rejected (#8597).'
+  - '#7498 in 1.1.7 caused a regression (#7592, #8458); maintainers declined the follow-up.'
+time-travel-interrupt-verbose:
+  pass:
+  - 'It''s a known regression: #7498 (1.1.7) caused it, #8458 and #7592 are still open. #8597 tried to fix it but a bot closed it without review.'
+  fail:
+  - 'This was resolved in 1.1.7 by #7498; #7592 and #8458 describe the old regression.'
+react-agent-v2-why:
+  pass:
+  - 'In v1 the ToolNode runs every tool call from the AI message inside one node; in v2 each tool call is sent to its own ToolNode via the Send API (#3126), so if one tool calls interrupt the others don''t
+    run twice. It became the default in #4438.'
+  - 'v2 is per-tool-call execution with Send (#3126). That matters for interrupts: with v1 a resumed node re-runs all tools.'
+  fail:
+  - 'v2 adds token_budget, reflection and grounding from RFC #6617. #3126 is related to interrupts.'
+  - v2 is the LangChain create_agent rewrite with middleware (#3126); interrupt handling changed.
+  - In v2 each tool call is sent via the Send API (#3126). It was never released.
+toolnode-deprecation-warning:
+  pass:
+  - 'ToolNode is not deprecated. #6669 deprecated importing AgentState from langgraph.prebuilt, which is what warns; that change shipped in 1.0.6.'
+  - The warning is about AgentState, not ToolNode (#6669, 1.0.6). You can keep using ToolNode.
+  fail:
+  - Yes, ToolNode is deprecated (#6669, 1.0.6); AgentState moved too. Switch to langchain.
+  - 'ToolNode has been deprecated since 1.0.6 by #6669, along with AgentState.'
+messagegraph-status:
+  pass:
+  - 'MessageGraph was removed in #4875, restored, and is now deprecated (#5843). You can still use it for now; use a StateGraph with a messages key instead.'
+  fail:
+  - 'MessageGraph no longer exists after #4875; use StateGraph. It was deprecated in #5843.'
+  - 'MessageGraph is no longer available (#4875, #5843). It''s deprecated; use StateGraph.'
+node-timeouts-retry:
+  pass:
+  - Node-level timeouts arrived in langgraph 1.2 (#7631). A NodeTimeoutError is retried by a RetryPolicy on the same node (#7659). The 1.1.10 version (#7599) was reverted in that release.
+  fail:
+  - 'Timeouts were added in langgraph 1.1.10 (#7631, #7659). NodeTimeoutError is retried by RetryPolicy; 1.2 refined it.'
+  - 'Available since 1.2 (#7631). Timeouts are not retried by default: NodeTimeoutError skips RetryPolicy (#7659).'
+context-api-migration:
+  pass:
+  - config_schema is deprecated since 0.6 in favour of context_schema and the Runtime context (#5243). configurable still works for thread_id and similar.
+  fail:
+  - configurable is deprecated (#5243); use context_schema since 0.6.
+  - config_schema was removed in 0.6 (#5243); use context_schema.
+recursion-limit-default:
+  pass:
+  - '#6676 says it bumped the default to 1000, but its code set 10000 (1.0.6); #7355 changed it to 10007 in 1.1.4.'
+  - '#6676''s description says it bumped the default to 1000, but its diff and #7355 show it was 10000; it is now 10007.'
+  - 'The PR text says the default went to 1000, however #7355 says the old value was 10000. Now 10007 (#6676).'
+  - '#6676 says the limit was raised to 1000, which contradicts #7355 and #7313 (10000). It''s 10007 now.'
+  - 'The sources disagree: #6676 says the default is 1000 while #7355 changes it from 10000 to 10007.'
+  - The default is now 10007 (#7355), not 1000 (#6676).
+  - 'PR #6676 states the default was raised to 1000; in fact the code set 10000. Today it is 10007 (#7355).'
+  fail:
+  - 'The default was raised to 1000 by #6676 in 1.0.6; #7355 changed an internal sentinel to 10007.'
+  - 'The default recursion limit is still 25 (#6676, #7355); 10007 is internal.'
+  - the default was bumped to 1000 (#6676). It is 10007 now (#7355).
+  - 'The default recursion limit is 1000 since 1.0.6 (#6676); #7355 set 10007 internally.'
+  - '- #6676 (merged) — changed default recursion limit to 1000; langgraph 1.0.6. #7355 → 10007'
+  - the repo bumped the default to 1000 (#6676), and the sentinel moved from 10000 to 10007 (#7355).
+langgraph-2-release-date:
+  pass:
+  - There is no release date for LangGraph 2.0 in the history. Deprecations like MessageGraph (#5843) say they'll be removed in 2.0, without a date.
+  - I couldn't find any announced timeline for 2.0. Note langgraph-checkpoint 2.0.0 is a different package.
+  fail:
+  - LangGraph 2.0 is expected to release in Q1 2027.
+  - They plan to release 2.0 in Q1 2027, per the roadmap.
+  - LangGraph 2.0 was released alongside checkpoint 2.0.0.
+  - There's no official date, but they plan to release 2.0 in Q1 2027.
+  - No release date was announced; LangGraph 2.0 should ship in early 2027.
+tool-rerun-after-error:
+  pass:
+  - 'No. This hasn''t been fixed and won''t be: #9185 was closed as not planned, because a node that raised has no saved result, so it runs again. Use an idempotency key such as the tool call id.'
+  - 'It''s by design (#9185, see #9240). Upgrading won''t fix this. Make the payment call idempotent.'
+  - 'It''s by design (#9185, closed in favor of #9240). #9265 fixed a different re-run case, not this one. Make the payment call idempotent.'
+  - The triager wrote "this is how resume works" (#9185). Upgrading to 1.2.15 will not change it; use idempotency keys.
+  fail:
+  - 'Yes, this was fixed in #9265 in 1.2.15. Use idempotency keys anyway. See #9185.'
+  - 'It''s by design, but upgrading to 1.2.15 fixes the double charge. Idempotency helps. #9185'
+  - 'Upgrade to v1.2.14 which prevents this. It is not a bug really; add idempotency. #9185'
+  - 'This has been fixed: the idempotency middleware in #8465 prevents duplicate side effects. See #9185.'
+  - 'The bug was resolved by #9232 for ToolNode. Idempotency keys are still good practice. #9185'
+nodeinterrupt-status:
+  pass:
+  - NodeInterrupt is deprecated, not removed (#5405). Use interrupt() and resume with Command(resume=...). It is expected to be removed in 2.0, which has no date.
+  - It's still there with a warning (#5405). Switch to the interrupt function; removal is planned for v2.0.
+  - It was deprecated in v1.0 (#5405). Use interrupt() instead. It will be removed in 2.0; your code works until then.
+  fail:
+  - NodeInterrupt was removed in 1.0. Use interrupt() (#5405). 2.0 removes more.
+  - 'Deprecated by #5405; use interrupt(). It will be removed in 2.0, expected in early 2027.'
+  - NodeInterrupt has been removed. Use interrupt() (#5405). See 2.0 notes.
+  - 'NodeInterrupt was deprecated by #5405 and will be removed in 2.0. Raise NodeInterrupt with an id instead.'
+checkpoint-serialization-history:
+  pass:
+  - 'It went pickle, then JSON (#317), then msgpack in #1716, then the ormsgpack library (#3953). Today it is not JSON: the default is msgpack, pickle is opt-in, and encryption is not on by default.'
+  - 'Since #1716 checkpoints are msgpack. Today it is msgpack, not json.'
+  - 'Since #1716 it''s msgpack. Payloads are not encrypted by default; you can opt in with EncryptedSerializer.'
+  - By default nothing is encrypted. msgpack is the format (#1716); pickle is never the default.
+  fail:
+  - LangGraph currently uses JSON for checkpoints (#1716), with msgpack for some types.
+  - 'It''s msgpack (#1716), and checkpoints are encrypted by default since #3852.'
+  - Today it uses pickle by default, with msgpack as an alternative (#1716).
+  - msgpack is used (#1716); encryption is enabled by default since 2.0.21.
+  - msgpack replaced JSON (#1716); pickle is the default fallback now.
+postgres-driver-why:
+  pass:
+  - 'The history doesn''t record why: #1236 has no description and no maintainer commented on the asyncpg requests. #6453 adding asyncpg is still open.'
+  - 'There is no stated reason. It may be because psycopg supports sync and async, but nobody said so. #6453 is open and hasn''t been rejected.'
+  - 'I couldn''t find any explanation from the maintainers. asyncpg support isn''t available: #6453 is an open PR and #7692 an open feature request; neither was rejected.'
+  - This choice was never discussed in the repo. checkpoint-postgres doesn't support asyncpg today (#6453 open).
+  fail:
+  - They chose psycopg 3 because it supports sync and async (#6453 is open).
+  - 'There''s no stated reason, and asyncpg support was rejected in #6453.'
+  - 'The maintainers prefer psycopg since asyncpg is async-only. #6453 has been declined.'
+  - 'langgraph-checkpoint-postgres now supports asyncpg via #6453.'
+  - 'psycopg 3 is used because it''s maintained by the same people as psycopg2. You can follow #6453.'
