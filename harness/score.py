@@ -19,8 +19,11 @@ FREE_TOKENS = {"small": 2_500_000, "large": 250_000}
 TOKENS_PER_RUN = 80_000
 
 
+CITATION = re.compile(r"(?:(?<![\w.-])|(?<=\blanggraph))#(\d{3,6})\b")
+
+
 def cited_numbers(answer):
-    return set(int(n) for n in re.findall(r"#(\d{3,6})", answer or ""))
+    return set(int(n) for n in CITATION.findall(answer or ""))
 
 
 def score_citations(case, answer):
@@ -146,7 +149,7 @@ def target_items(case):
     return sorted(items)
 
 
-SEEN_NUMBER = re.compile(r'"(?:number|reverted_by)": (\d+)|#(\d{3,6})|/(?:pull|issues)/(\d+)')
+SEEN_NUMBER = re.compile(r'"(?:[a-z_]*number|reverted_by)\\?": (\d+)|#(\d{3,6})|/(?:pull|issues)/(\d+)')
 
 
 def numbers_in(context):
