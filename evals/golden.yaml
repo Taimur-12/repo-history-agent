@@ -15,8 +15,7 @@
   also_acceptable: [8597, 7593]
   must_mention: ["1.1.7", "regression"]
   should_not:
-    - "fixed in (version )?1\\.1\\.7"
-    - "resolved in (version )?1\\.1\\.7"
+    - "\\b(this|it|it's|it is|the (bug|issue|problem|regression))\\W+(is |was |has been |got )?(now )?(fixed|resolved) in (version |v)?1\\.1\\.7\\b"
     - "no longer an issue"
     - "the fix was rejected"
     - "maintainers declined"
@@ -28,8 +27,7 @@
   also_acceptable: [8597, 7593]
   must_mention: ["1.1.7", "regression"]
   should_not:
-    - "fixed in (version )?1\\.1\\.7"
-    - "resolved in (version )?1\\.1\\.7"
+    - "\\b(this|it|it's|it is|the (bug|issue|problem|regression))\\W+(is |was |has been |got )?(now )?(fixed|resolved) in (version |v)?1\\.1\\.7\\b"
     - "no longer an issue"
     - "the fix was rejected"
     - "maintainers declined"
@@ -110,7 +108,7 @@
     - "no (information|record|mention|announcement|timeline)"
   should_not:
     - "langgraph 2\\.0(\\.0)? (was|has been|is) (released|out|available)"
-    - "\\b(release[sd]?|ship(s|ped)?|launch(es|ed)?|coming out|come out|arrive[sd]?)\\b[^.]{0,40}\\b(Q[1-4]\\s*20\\d\\d|(early|mid|late)[- ]20\\d\\d|(january|february|march|april|may|june|july|august|september|october|november|december)\\s+20\\d\\d)"
+    - "\\b(release[sd]?|ship(s|ped)?|launch(es|ed)?|coming out|come out|arrive[sd]?)\\b(?:[^.\\n]|\\.(?=\\d)){0,40}\\b(Q[1-4]\\s*20\\d\\d|(early|mid|late)[- ]20\\d\\d|(january|february|march|april|may|june|july|august|september|october|november|december)\\s+20\\d\\d)"
 
 - id: tool-rerun-after-error
   q: "my tool calls a payment API. the call timed out and the graph raised an error. when i invoke it again with the same thread_id to resume, it runs the tool again and the customer gets charged twice. is this a known bug, and has it been fixed in langgraph?"
