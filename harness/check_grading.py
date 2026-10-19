@@ -5,6 +5,7 @@ import yaml
 from harness.score import GOLDEN, ROOT, score_citations, score_forbidden, score_match_any, score_mentions
 
 EXAMPLES = ROOT / "evals" / "grading_examples.yaml"
+TYPES = {"which-way-current", "why-like-this", "prior-art", "evolution", "ownership", "in-flight", "quantitative", "refuse"}
 
 
 def problems(case, answer):
@@ -26,10 +27,14 @@ def main():
                     wrong += 1
                     print(f"WRONG {case_id}: expected {expected}, got {found or 'pass'}\n    {answer[:120]}")
     untested = sorted(set(cases) - set(examples))
+    untyped = sorted(c for c, case in cases.items() if case.get("type") not in TYPES)
+    unverified = sorted(c for c, case in cases.items() if not case.get("verified_by"))
     print(f"{total - wrong}/{total} examples graded as expected")
-    if untested:
-        print(f"cases with no examples: {', '.join(untested)}")
-    sys.exit(1 if wrong or untested else 0)
+    for label, ids in (("cases with no examples", untested), ("cases without a known type", untyped),
+                       ("cases without verified_by", unverified)):
+        if ids:
+            print(f"{label}: {', '.join(ids)}")
+    sys.exit(1 if wrong or untested or untyped or unverified else 0)
 
 
 if __name__ == "__main__":

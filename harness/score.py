@@ -198,6 +198,7 @@ def score(case, record):
 
     return {
         "case_id": case["id"],
+        "type": case.get("type"),
         "run_id": record["run_id"],
         "passed": not (missing_cites or missing_tools or missing_mentions or forbidden or missing_any),
         "missing_cites": missing_cites,
@@ -242,6 +243,7 @@ def summarise(results):
                     counts.update(flag for flag, value in flags.items() if value)
         rows.append({
             "case_id": case_id,
+            "type": runs[0].get("type"),
             "runs": n,
             "passed": sum(r["passed"] for r in runs),
             "avg_calls": sum(r["tool_calls"] for r in runs) / n,
@@ -278,6 +280,18 @@ def report_stages(rows):
             first = False
 
 
+def report_types(rows):
+    by_type = {}
+    for row in rows:
+        totals = by_type.setdefault(row["type"] or "untyped", [0, 0, 0])
+        totals[0] += row["passed"]
+        totals[1] += row["runs"]
+        totals[2] += 1
+    print("by question type: " + "   ".join(
+        f"{name} {passed}/{runs} ({cases} case{'s' if cases > 1 else ''})"
+        for name, (passed, runs, cases) in sorted(by_type.items())))
+
+
 def report_citations(rows):
     unseen = {row["case_id"]: row["unseen_cites"] for row in rows if row["unseen_cites"]}
     unvetted = sum(len(row["unvetted_cites"]) for row in rows)
@@ -304,6 +318,7 @@ def report(meta, rows):
     all_pass = sum(row["passed"] == row["runs"] for row in rows)
     print(f"pass@{k} (at least one run passed): {any_pass}/{len(rows)} cases   "
           f"pass^{k} (every run passed): {all_pass}/{len(rows)} cases")
+    report_types(rows)
     report_stages(rows)
     report_citations(rows)
 
