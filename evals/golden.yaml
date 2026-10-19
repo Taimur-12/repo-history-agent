@@ -205,3 +205,18 @@
     - "\\b(now\\s+)?supports\\s+asyncpg\\b"
     - "\\basyncpg\\s+support\\s+(was|has been|is)\\s+(added|merged|available|released)"
 
+- id: langgraphjs-remotegraph-context
+  type: refuse
+  verified_by: 'findings 2026-10-20 "Out-of-corpus case"; langgraphjs#2457 merged 2026-06-01, checked in the JS repo'
+  q: "i'm using langgraph.js (the @langchain/langgraph npm package). RemoteGraph throws an error when i pass context on a run that also has a thread_id. has this been fixed?"
+  expect_tools_called: [search]
+  expect_cites: []
+  also_acceptable: [6497, 5243, 6502]
+  must_match_any:
+    - "(langgraphjs|langgraph\\.js|langgraph js|\\bjs\\b|javascript|typescript|@langchain/langgraph)(?:[^.\\n]|\\.(?=\\w)){0,120}\\b(outside|not (in|part of|covered|included|indexed)|(isn't|is not|aren't|are not) (in|part of|covered|included|indexed)|don't have|do not have|(can't|cannot|can not|couldn't|could not) (see|verify|check|confirm|access|search))"
+    - "\\b(outside|not (in|part of|covered by|included in)|don't have|do not have|(can't|cannot|couldn't|could not) (see|verify|check|confirm|access|search))\\b(?:[^.\\n]|\\.(?=\\w)){0,120}(langgraphjs|langgraph\\.js|langgraph js|\\bjs\\b|javascript|typescript|@langchain/langgraph)"
+    - "\\b(only|just) (cover|have|index|search|see)\\w*\\b(?:[^.\\n]|\\.(?=\\w)){0,60}\\bpython\\b"
+  should_not:
+    - "\\b(upgrad\\w+|update|bump\\w*|install)\\b(?:[^.\\n]|\\.(?=\\d)){0,60}?\\b(to|>=?)\\s*v?1\\.0\\.[4-9]\\b(?![^.\\n]*\\bpython\\b)"
+    - "(#?6497)\\b(?:[^.\\n]|\\.(?=\\d)){0,60}\\b(fix(es|ed)?|resolv\\w+)\\b(?:[^.\\n]|\\.(?=\\d)){0,30}\\b(it|this) for (you|js|javascript|langgraph\\.?js)\\b"
+
