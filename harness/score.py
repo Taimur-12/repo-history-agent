@@ -188,6 +188,7 @@ def score_stages(case, record):
         "items": items,
         "facts": facts,
         "unseen_cites": sorted(cited - numbers_in(context)),
+        "cited_count": len(cited),
         "unvetted_cites": sorted(cited - vetted),
     }
 
@@ -262,6 +263,8 @@ def summarise(results):
             "missing_any": dict(unmatched),
             "unseen_cites": dict(unseen),
             "unvetted_cites": dict(unvetted),
+            "cites_per_run": [(r["stages"].get("cited_count", 0), len(r["stages"].get("unvetted_cites", [])))
+                              for r in runs],
             "stages": {group: {key: dict(c) for key, c in found.items()} for group, found in stages.items()},
         })
     return rows
@@ -298,16 +301,20 @@ def report_types(rows):
 
 def report_citations(rows):
     unseen = {row["case_id"]: row["unseen_cites"] for row in rows if row["unseen_cites"]}
-    unvetted = sum(len(row["unvetted_cites"]) for row in rows)
+    per_run = [counts for row in rows for counts in row["cites_per_run"]]
     print(f"\ncited numbers that appear in no tool result (possible fabrication, not scored): {sum(map(len, unseen.values()))}")
     for case_id, numbers in unseen.items():
         print(f"  {case_id:<34} " + ", ".join(f"#{n} x{c}" for n, c in sorted(numbers.items())))
-    print(f"distinct citations outside expect_cites + also_acceptable (saved in results, not scored): {unvetted}")
+    if per_run:
+        cited = sum(c for c, _ in per_run) / len(per_run)
+        outside = sum(u for _, u in per_run) / len(per_run)
+        print(f"citations per answer: {cited:.1f} on average, {outside:.1f} outside the case's vetted list "
+              f"(the lists are incomplete, so this is not a precision score)")
 
 
 def report(meta, rows):
     print()
-    print(f"model={meta['model']}  prompt={meta['prompt_version']}  reasoning={meta['reasoning']}  repeat={meta['repeat']}")
+    print(f"model={meta['model']}  prompt={meta['prompt_version']}  reasoning={meta.get('reasoning')}  repeat={meta['repeat']}")
     print(f"{'case':<34} {'pass':>6} {'calls':>6} {'tok_in':>8} {'tok_out':>8} {'sec':>6}  terminations")
     print("-" * 90)
     for row in rows:
