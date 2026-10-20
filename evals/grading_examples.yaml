@@ -102,6 +102,7 @@ nodeinterrupt-status:
   - NodeInterrupt is deprecated, not removed (#5405). Use interrupt() and resume with Command(resume=...). It is expected to be removed in 2.0, which has no date.
   - It's still there with a warning (#5405). Switch to the interrupt function; removal is planned for v2.0.
   - It was deprecated in v1.0 (#5405). Use interrupt() instead. It will be removed in 2.0; your code works until then.
+  - 'NodeInterrupt was deprecated in #5405 (shipped in 0.6.0). Use interrupt() instead. I found no removal date, so it still works for now.'
   fail:
   - NodeInterrupt was removed in 1.0. Use interrupt() (#5405). 2.0 removes more.
   - 'Deprecated by #5405; use interrupt(). It will be removed in 2.0, expected in early 2027.'

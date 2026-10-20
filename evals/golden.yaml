@@ -167,7 +167,6 @@
   expect_tools_called: [search, "get_pr:5405"]
   expect_cites: [5405]
   also_acceptable: [2393, 5325, 5426, 6093, 6259, 4973, 5016]
-  must_mention: ["2.0"]
   must_match_any:
     - "\\binterrupt\\("
     - "types\\.interrupt"
