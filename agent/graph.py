@@ -127,9 +127,9 @@ def get_pr(number: int) -> str:
     `review_comments` holds the oldest review entries, up to about 2000 characters, in the same form as
     `get_comments` gives them. When there are more, `more_review_comments` says how many.
 
-    Also returns `code_changes`: the changed lines of its source files (tests, docs and config are only listed by
-    name in `other_files`), up to 40 lines, with `more_lines` when a file has more. The code shows what the pull
-    request actually did; when it disagrees with the description, the code is right.
+    Also returns `code_changes`: each changed source file with its status and line counts, and up to 40 of its
+    changed lines shared across the files (`more_lines` counts the ones left out). Tests, docs and config are only
+    listed by name in `other_files`.
 
     Args:
         number: The pull request number, without the #.

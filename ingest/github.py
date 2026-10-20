@@ -162,7 +162,7 @@ def error_message(exc, kind, n):
 
 
 NOT_CODE = re.compile(
-    r"(^|/)(tests?|docs?|examples?)/|(^|/)test_[^/]*$|\.(md|mdx|ipynb|lock|txt|toml|cfg|ini|json|ya?ml)$|Makefile$"
+    r"(^|/)(tests?|docs?|examples?)/|(^|/)test_[^/]*$|\.(md|mdx|ipynb|lock|txt|toml|cfg|ini|json|ya?ml)$|(^|/)(Makefile|LICENSE)$"
 )
 MAX_CHANGED_LINES = 40
 MAX_LINE_CHARS = 160
@@ -178,18 +178,31 @@ def code_changes(n):
     except requests.HTTPError:
         return None, False
 
-    shown, other, used = [], [], 0
+    source, other = [], []
     for file in files:
         lines = changed_lines(file.get("patch") or "")
-        room = MAX_CHANGED_LINES - used
-        if NOT_CODE.search(file["filename"]) or not lines or room <= 0:
+        if NOT_CODE.search(file["filename"]) or not lines:
             other.append(file["filename"])
-            continue
-        entry = {"file": file["filename"], "additions": file["additions"], "deletions": file["deletions"], "lines": lines[:room]}
-        if len(lines) > room:
-            entry["more_lines"] = len(lines) - room
+        else:
+            source.append((file, lines))
+
+    room = {}
+    budget = MAX_CHANGED_LINES
+    edited = [(file, lines) for file, lines in source if file["status"] != "removed"]
+    for i, (file, lines) in enumerate(sorted(edited, key=lambda pair: len(pair[1]))):
+        share = budget // (len(edited) - i)
+        room[file["filename"]] = min(len(lines), share)
+        budget -= room[file["filename"]]
+
+    shown = []
+    for file, lines in source:
+        entry = {"file": file["filename"], "status": file["status"], "additions": file["additions"], "deletions": file["deletions"]}
+        keep = room.get(file["filename"], 0)
+        if keep:
+            entry["lines"] = lines[:keep]
+        if len(lines) > keep and file["status"] != "removed":
+            entry["more_lines"] = len(lines) - keep
         shown.append(entry)
-        used += len(entry["lines"])
     return {"code": shown, "other_files": other}, cache_hit
 
 
