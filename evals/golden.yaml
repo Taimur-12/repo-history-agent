@@ -20,7 +20,8 @@
   must_mention: ["1.1.7", "regression"]
   should_not:
     - "\\b(this|it|it's|it is|the (bug|issue|problem|regression))\\W+(is |was |has been |got )?(now )?(fixed|resolved) in (version |v)?1\\.1\\.7\\b"
-    - "no longer an issue"
+    - pattern: "no longer an issue"
+      negative_claim: true
     - "the fix was rejected"
     - "maintainers declined"
 
@@ -34,7 +35,8 @@
   must_mention: ["1.1.7", "regression"]
   should_not:
     - "\\b(this|it|it's|it is|the (bug|issue|problem|regression))\\W+(is |was |has been |got )?(now )?(fixed|resolved) in (version |v)?1\\.1\\.7\\b"
-    - "no longer an issue"
+    - pattern: "no longer an issue"
+      negative_claim: true
     - "the fix was rejected"
     - "maintainers declined"
 
@@ -53,7 +55,8 @@
     - "\\btool_call_parallelism\\b"
     - "\\b(distribut\\w+|dispatch\\w*|fan\\w* out)\\b(?:[^.\\n]){0,40}\\btool calls?\\b"
   should_not:
-    - "never (been )?released"
+    - pattern: "never (been )?released"
+      negative_claim: true
 
 - id: toolnode-deprecation-warning
   type: which-way-current
@@ -75,8 +78,10 @@
   also_acceptable: [5101, 4873, 5251, 5252, 1330]
   must_mention: ["StateGraph", "deprecated"]
   should_not:
-    - "MessageGraph no longer exists"
-    - "MessageGraph is (not|no longer) available"
+    - pattern: "MessageGraph no longer exists"
+      negative_claim: true
+    - pattern: "MessageGraph is (not|no longer) available"
+      negative_claim: true
 
 - id: node-timeouts-retry
   type: evolution
@@ -88,7 +93,8 @@
   must_mention: ["1.2", "NodeTimeoutError"]
   should_not:
     - "(added|introduced|shipped|available) in (langgraph )?v?1\\.1\\.10"
-    - "(timeouts?|NodeTimeoutError) (are|is) not retried by default"
+    - pattern: "(timeouts?|NodeTimeoutError) (are|is) not retried by default"
+      negative_claim: true
 
 - id: context-api-migration
   type: which-way-current
@@ -153,6 +159,7 @@
     - "\\bupgrad\\w+\\b(?:[^.\\n]|\\.(?=\\d)){0,40}\\b(fix|fixes|fixed|resolve[sd]?|solve[sd]?|prevent\\w*)\\b"
     - "(#?9232|#?9265|#?846[345])\\W+(\\w+\\W+){0,4}(fix(es|ed)?|resolv\\w+|solv\\w+|prevent\\w*)\\W+(\\w+\\W+){0,3}(this|your|the (double|duplicate|re-?run|issue|bug))"
     - "(fixed|resolved) (in|by) (#?9232|#?9265|#?846[345]|v?1\\.2\\.1[3-9])"
+    - "\\bv?1\\.2\\.1[3-9]\\b\\W+(\\w+\\W+){0,2}?(fix(es|ed)?|resolv\\w+|solv\\w+|prevent\\w*)\\W+(it|this|your|the (issue|bug|problem|double[- ]charge|re-?run))\\b"
 
 - id: nodeinterrupt-status
   type: evolution
@@ -169,7 +176,8 @@
     - "\\binterrupt (function|primitive|api)"
   should_not:
     - "NodeInterrupt\\W+(was|has been|is|got)\\W+(already\\W+|now\\W+)?removed"
-    - "(removed|no longer (exists|available|works)) in (v|version )?(0\\.6|1\\.\\d+)\\b"
+    - pattern: "(removed|no longer (exists|available|works)) in (v|version )?(0\\.6|1\\.\\d+)\\b"
+      negative_claim: true
     - "\\b2\\.0\\b(?:[^.\\n]|\\.(?=\\d)){0,40}\\b(Q[1-4]\\s*20\\d\\d|(early|mid|late)[- ]20\\d\\d|(january|february|march|april|may|june|july|august|september|october|november|december)\\s+20\\d\\d)"
 
 - id: checkpoint-serialization-history

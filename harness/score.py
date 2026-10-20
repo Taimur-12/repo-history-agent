@@ -91,8 +91,11 @@ def negated(text, start):
     return bool(NEGATION.search(clause))
 
 
-def claims(pattern, text):
-    negative_claim = bool(NEGATION.search(pattern))
+def rule_pattern(rule):
+    return rule if isinstance(rule, str) else rule["pattern"]
+
+
+def claims(pattern, text, negative_claim=False):
     for m in re.finditer(pattern, text, re.IGNORECASE):
         if negated(text, m.start()):
             continue
@@ -104,7 +107,8 @@ def claims(pattern, text):
 
 def score_forbidden(case, answer):
     claimed = without_quotes(answer)
-    return [pattern for pattern in case.get("should_not", []) if claims(pattern, claimed)]
+    return [rule_pattern(rule) for rule in case.get("should_not", [])
+            if claims(rule_pattern(rule), claimed, isinstance(rule, dict) and rule.get("negative_claim", False))]
 
 
 OPENING_TOOLS = ("get_pr", "get_issue", "get_timeline", "get_comments")

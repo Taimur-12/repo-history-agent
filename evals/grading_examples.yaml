@@ -86,7 +86,10 @@ tool-rerun-after-error:
   - 'It''s by design (#9185, see #9240). Upgrading won''t fix this. Make the payment call idempotent.'
   - 'It''s by design (#9185, closed in favor of #9240). #9265 fixed a different re-run case, not this one. Make the payment call idempotent.'
   - The triager wrote "this is how resume works" (#9185). Upgrading to 1.2.15 will not change it; use idempotency keys.
+  - 'It''s by design (#9185). No release, including 1.2.15, fixes this; make the payment call idempotent.'
+  - '1.2.15 doesn''t fix it either: it''s by design (#9185). Use idempotency keys.'
   fail:
+  - 'It''s by design (#9185) and won''t be changed upstream, but 1.2.15 fixes it if you also use idempotency keys.'
   - 'Yes, this was fixed in #9265 in 1.2.15. Use idempotency keys anyway. See #9185.'
   - 'It''s by design, but upgrading to 1.2.15 fixes the double charge. Idempotency helps. #9185'
   - 'Upgrade to v1.2.14 which prevents this. It is not a bug really; add idempotency. #9185'
