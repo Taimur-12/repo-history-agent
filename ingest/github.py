@@ -1,4 +1,4 @@
-import json, os, re
+import json, os, re, threading, time
 from urllib.parse import quote_plus
 from pathlib import Path
 from dotenv import load_dotenv
@@ -47,6 +47,42 @@ def cache_file(path):
     name = path.strip("/").replace("/", "__").replace("?", "__").replace("&", "__")
     return CACHE_DIR / f"{name}.json"
 
+SEARCH_INTERVAL = 2.2
+RATE_LIMIT_RETRIES = 3
+search_lock = threading.Lock()
+last_search = [0.0]
+
+
+def pace_search():
+    with search_lock:
+        wait = last_search[0] + SEARCH_INTERVAL - time.monotonic()
+        if wait > 0:
+            time.sleep(wait)
+        last_search[0] = time.monotonic()
+
+
+def rate_limit_wait(response):
+    if response.status_code not in (403, 429):
+        return None
+    if response.headers.get("retry-after"):
+        return int(response.headers["retry-after"]) + 1
+    if response.headers.get("x-ratelimit-remaining") == "0":
+        return max(int(response.headers.get("x-ratelimit-reset", time.time())) - time.time(), 0) + 1
+    return None
+
+
+def get(url):
+    for _ in range(RATE_LIMIT_RETRIES):
+        if url.startswith(f"{API}/search/"):
+            pace_search()
+        response = requests.get(url, headers=headers(), timeout=TIMEOUT)
+        wait = rate_limit_wait(response)
+        if wait is None:
+            return response
+        time.sleep(min(wait, 120))
+    return response
+
+
 def fetch(path):
     cached = cache_file(path)
 
@@ -57,7 +93,7 @@ def fetch(path):
     items=[]
 
     while url:
-        response = requests.get(url, headers=headers(), timeout=TIMEOUT)
+        response = get(url)
         response.raise_for_status()
         page=response.json()
 
