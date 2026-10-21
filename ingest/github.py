@@ -13,6 +13,8 @@ load_dotenv(ROOT / ".env")
 CACHE_DIR = ROOT / "data" / "cache"
 ARCHIVE_DIR = ROOT / "data" / "cache-archive-20261021"
 AS_OF = "2026-10-16T18:34:00Z"
+MATCHED_TEXT = True
+TEXT_MATCH = "application/vnd.github.text-match+json"
 
 
 def by_freeze(when):
@@ -71,11 +73,14 @@ def rate_limit_wait(response):
     return None
 
 
-def get(url):
+def get(url, accept=None):
+    sent = headers()
+    if accept:
+        sent["Accept"] = accept
     for _ in range(RATE_LIMIT_RETRIES):
         if url.startswith(f"{API}/search/"):
             pace_search()
-        response = requests.get(url, headers=headers(), timeout=TIMEOUT)
+        response = requests.get(url, headers=sent, timeout=TIMEOUT)
         wait = rate_limit_wait(response)
         if wait is None:
             return response
@@ -83,8 +88,8 @@ def get(url):
     return response
 
 
-def fetch(path):
-    cached = cache_file(path)
+def fetch(path, accept=None, variant=""):
+    cached = cache_file(path + variant)
 
     if cached.exists():
         return json.loads(cached.read_text()), True
@@ -93,7 +98,7 @@ def fetch(path):
     items=[]
 
     while url:
-        response = get(url)
+        response = get(url, accept)
         response.raise_for_status()
         page=response.json()
 
@@ -264,7 +269,11 @@ def search(query, kind="any", merged_only=False, before=None, after=None, oldest
     encoded = quote_plus(f"repo:{REPO} {scope}{query}{created_range(before, after)}")
     order = "&sort=created&order=asc" if oldest_first else ""
     try:
-        result, cache_hit = fetch(f"/search/issues?q={encoded}&per_page={limit}{order}")
+        path = f"/search/issues?q={encoded}&per_page={limit}{order}"
+        if MATCHED_TEXT:
+            result, cache_hit = fetch(path, TEXT_MATCH, "&text_match")
+        else:
+            result, cache_hit = fetch(path)
     except requests.HTTPError as exc:
         return error_message(exc, "search", query), False
 
@@ -283,8 +292,19 @@ def search_result(item):
         found["merged"] = bool(merged_at)
         found["merged_on"] = merged_at[:10] if merged_at else None
     found["title"] = item["title"]
-    found["snippet"] = snippet(item.get("body"))
+    found["snippet"] = matched_text(item) or snippet(item.get("body"))
     return found
+
+
+MATCH_CHARS = 400
+
+
+def matched_text(item):
+    fragments = [" ".join(m["fragment"].split()) for m in item.get("text_matches", []) if m.get("property") == "body"]
+    text = " … ".join(f for f in fragments if f)
+    if len(text) <= MATCH_CHARS:
+        return text
+    return text[:MATCH_CHARS].rsplit(" ", 1)[0] + "…"
 
 
 def split_tag(tag):

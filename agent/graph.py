@@ -96,7 +96,8 @@ def search(
     """Find pull requests and issues in langchain-ai/langgraph whose text contains every word of the query.
 
     Returns up to 10 matches, each with number, kind (pr or issue), state, the date it was created, title and a
-    snippet: the opening of its description, which often says what a pull request changes when its title does not.
+    snippet: the passages of its description that contain your query words (or its opening, when only the title
+    matched), which often show why it matched when its title does not.
     Pull requests also have `merged` and `merged_on`: a closed pull request with `merged: false` never landed.
     Matches are ranked by relevance, which favours recently active items. May add a note about the search itself.
 
