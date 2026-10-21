@@ -14,6 +14,7 @@ CACHE_DIR = ROOT / "data" / "cache"
 ARCHIVE_DIR = ROOT / "data" / "cache-archive-20261021"
 AS_OF = "2026-10-16T18:34:00Z"
 MATCHED_TEXT = True
+REVIEW_COMMENTS = True
 TEXT_MATCH = "application/vnd.github.text-match+json"
 
 
@@ -215,7 +216,7 @@ def get_comments(n):
     except requests.HTTPError as exc:
         return error_message(exc, "issue", n), False
 
-    return [
+    discussion = [
         {
             "author": (comment.get("user") or {}).get("login"),
             "author_type": (comment.get("user") or {}).get("type"),
@@ -224,7 +225,65 @@ def get_comments(n):
         }
         for comment in comments
         if by_freeze(comment["created_at"])
-    ], cache_hit
+    ]
+    if not REVIEW_COMMENTS:
+        return discussion, cache_hit
+
+    try:
+        reviews, reviews_hit = review_comments(n)
+    except requests.HTTPError:
+        reviews, reviews_hit = [], False
+    for entry in discussion:
+        entry["type"] = "discussion"
+    return sorted(discussion + reviews, key=lambda entry: entry["created_at"] or ""), cache_hit and reviews_hit
+
+
+REVIEW_CHARS = 800
+
+
+def capped(text):
+    text = text or ""
+    if len(text) <= REVIEW_CHARS:
+        return text
+    return text[:REVIEW_CHARS].rsplit(" ", 1)[0] + "…"
+
+
+def is_bot(user):
+    return (user or {}).get("type") == "Bot" or (user or {}).get("login", "").endswith("[bot]")
+
+
+def review_comments(n):
+    issue, hit = fetch(f"/repos/{REPO}/issues/{n}")
+    if "pull_request" not in issue:
+        return [], hit
+    inline, inline_hit = fetch(f"/repos/{REPO}/pulls/{n}/comments?per_page=100")
+    summaries, summaries_hit = fetch(f"/repos/{REPO}/pulls/{n}/reviews?per_page=100")
+    entries = [
+        {
+            "type": "review",
+            "author": (comment.get("user") or {}).get("login"),
+            "author_type": (comment.get("user") or {}).get("type"),
+            "created_at": comment["created_at"],
+            "file": comment.get("path"),
+            "body": capped(comment.get("body")),
+        }
+        for comment in inline
+        if by_freeze(comment["created_at"]) and not is_bot(comment.get("user"))
+    ]
+    entries += [
+        {
+            "type": "review",
+            "author": (review.get("user") or {}).get("login"),
+            "author_type": (review.get("user") or {}).get("type"),
+            "created_at": review["submitted_at"],
+            "review_state": review.get("state"),
+            "body": capped(review.get("body")),
+        }
+        for review in summaries
+        if (review.get("body") or "").strip() and by_freeze(review.get("submitted_at"))
+        and not is_bot(review.get("user"))
+    ]
+    return entries, hit and inline_hit and summaries_hit
 
 
 SEARCH_KINDS = {"any": "", "pr": "is:pr ", "issue": "is:issue "}

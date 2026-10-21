@@ -154,7 +154,11 @@ def get_timeline(number: int) -> str:
 
 @tool(parse_docstring=True)
 def get_comments(number: int) -> str:
-    """Get the conversation on a pull request or issue: each comment's author, author_type (User or Bot), date and body.
+    """Get the conversation on a pull request or issue, oldest first: each comment's type, author, author_type (User or Bot), date and body.
+
+    `type` is "discussion" for the conversation below the item, or "review" for code-review comments on a pull
+    request (with the `file` they were left on) and review summaries (with `review_state`). Review comments are
+    where reviewers ask for and agree on changes to the code. Each review entry is shortened to 800 characters.
 
     Args:
         number: The pull request or issue number, without the #.

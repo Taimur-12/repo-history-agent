@@ -34,6 +34,8 @@ CHECKS = [
     ("#9336 created 22:04: hidden from search", lambda: 9336 not in search_numbers("clear_cache no-op", "pr")),
     ("#4956 timeline: cross-reference from #5115 on 10-19 dropped", lambda: 5115 not in cross_refs(4956)),
     ("#7345: the one comment after the freeze dropped", lambda: len(comments(7345)) == 12),
+    ("#8619: review from 10-17 dropped, earlier review kept", lambda: [c["created_at"][:10] for c in comments(8619)
+                                                                     if c.get("type") == "review"] == ["2026-08-14"]),
     ("#9302 shipped only in 1.2.16 (10-16 22:11): no release yet", lambda: isinstance(github.version_for_pr(9302)[0], str)),
     ("#6497 shipped in 1.0.4 (2025): release kept", lambda: any(r["version"] == "1.0.4" for r in github.version_for_pr(6497)[0])),
 ]

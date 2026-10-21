@@ -127,22 +127,25 @@ def call_args(call):
 
 FROZEN_FROM = "2026-10-21T00:00:00"
 MATCHED_TEXT_FROM = "2026-10-22T00:00:00"
+REVIEW_COMMENTS_FROM = "2026-10-22T00:00:00"
 
 
 @contextmanager
 def repo_as_seen_by(record):
     from ingest import github
 
-    saved = github.CACHE_DIR, github.AS_OF, github.MATCHED_TEXT
+    saved = github.CACHE_DIR, github.AS_OF, github.MATCHED_TEXT, github.REVIEW_COMMENTS
     started = record.get("started_at") or ""
     if started < FROZEN_FROM:
         github.CACHE_DIR, github.AS_OF = github.ARCHIVE_DIR, None
     if started < MATCHED_TEXT_FROM:
         github.MATCHED_TEXT = False
+    if started < REVIEW_COMMENTS_FROM:
+        github.REVIEW_COMMENTS = False
     try:
         yield
     finally:
-        github.CACHE_DIR, github.AS_OF, github.MATCHED_TEXT = saved
+        github.CACHE_DIR, github.AS_OF, github.MATCHED_TEXT, github.REVIEW_COMMENTS = saved
 
 
 def replay(call):
