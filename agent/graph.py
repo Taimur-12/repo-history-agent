@@ -58,20 +58,20 @@ def plain(value):
         return value.strip("'\"")
 
 
-def search_key(query, kind):
-    return frozenset(query.lower().split()), kind
+def search_key(query, kind, *options):
+    return frozenset(query.lower().split()), kind, tuple(str(o) for o in options)
 
 
 def key_of(call):
     args = [plain(a) for a in call["args"]]
     kind = args[1] if len(args) > 1 else plain(call["kwargs"].get("kind", "'any'"))
-    return search_key(args[0], kind)
+    return search_key(args[0], kind, *args[2:])
 
 
-def loop_note(query, kind):
+def loop_note(query, kind, *options):
     calls = earlier_calls()
-    if any(c["tool"] == "search" and key_of(c) == search_key(query, kind) for c in calls):
-        return ("You already ran this search earlier (same words, same kind), so these are the same results. "
+    if any(c["tool"] == "search" and key_of(c) == search_key(query, kind, *options) for c in calls):
+        return ("You already ran this search earlier (same words, same kind and options), so these are the same results. "
                 "Open a promising result with get_pr or get_issue, or search for something different.")
     streak = 0
     for call in reversed(calls):
@@ -85,19 +85,32 @@ def loop_note(query, kind):
 
 
 @tool(parse_docstring=True)
-def search(query: str, kind: Literal["any", "pr", "issue"] = "any") -> str:
+def search(
+    query: str,
+    kind: Literal["any", "pr", "issue"] = "any",
+    merged_only: bool = False,
+    before: str | None = None,
+    after: str | None = None,
+    oldest_first: bool = False,
+) -> str:
     """Find pull requests and issues in langchain-ai/langgraph whose text contains every word of the query.
 
-    Returns up to 10 matches, each with number, kind (pr or issue), state, title and a snippet: the opening of its
-    description, which often says what a pull request changes when its title does not. Pull requests also have
-    `merged`: a closed pull request with `merged: false` never landed. May add a note about the search itself.
+    Returns up to 10 matches, each with number, kind (pr or issue), state, the date it was created, title and a
+    snippet: the opening of its description, which often says what a pull request changes when its title does not.
+    Pull requests also have `merged` and `merged_on`: a closed pull request with `merged: false` never landed.
+    Matches are ranked by relevance, which favours recently active items. May add a note about the search itself.
 
     Args:
         query: Keywords only. Every word must appear in a result, so each extra word removes matches.
         kind: Which items to return. "pr" returns only pull requests, "issue" only issues, "any" both.
+        merged_only: Return only merged pull requests (ignores kind).
+        before: Only items created before this date, written YYYY-MM-DD.
+        after: Only items created after this date, written YYYY-MM-DD.
+        oldest_first: Order matches by creation date, oldest first, instead of by relevance.
     """
-    repeat = loop_note(query, kind)
-    results, _ = traced_tools.search(query, kind)
+    options = (merged_only, before, after, oldest_first)
+    repeat = loop_note(query, kind, *options)
+    results, _ = traced_tools.search(query, kind, *options)
     if isinstance(results, str):
         return results
     notes = [n for n in (repeat, sparse_note(query, len(results)) if len(results) <= SPARSE_RESULTS else None) if n]

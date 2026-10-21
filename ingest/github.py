@@ -241,13 +241,30 @@ def snippet(body):
     return text[:SNIPPET_CHARS].rsplit(" ", 1)[0] + "…"
 
 
-def search(query, kind="any", limit=10):
+DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
+
+
+def created_range(before, after):
+    upper = AS_OF
+    if before and (upper is None or before < upper):
+        upper = before
+    if after:
+        return f" created:{after}..{upper or '*'}"
+    return f" created:<{upper}" if upper else ""
+
+
+def search(query, kind="any", merged_only=False, before=None, after=None, oldest_first=False, limit=10):
     if kind not in SEARCH_KINDS:
         return f"unknown kind {kind!r}, use one of: any, pr, issue", False
-    created = f" created:<{AS_OF}" if AS_OF else ""
-    encoded = quote_plus(f"repo:{REPO} {SEARCH_KINDS[kind]}{query}{created}")
+    before, after = before or None, after or None
+    for name, value in (("before", before), ("after", after)):
+        if value is not None and not DATE.fullmatch(str(value)):
+            return f"{name} must be a date written YYYY-MM-DD, got {value!r}", False
+    scope = "is:pr is:merged " if merged_only else SEARCH_KINDS[kind]
+    encoded = quote_plus(f"repo:{REPO} {scope}{query}{created_range(before, after)}")
+    order = "&sort=created&order=asc" if oldest_first else ""
     try:
-        result, cache_hit = fetch(f"/search/issues?q={encoded}&per_page={limit}")
+        result, cache_hit = fetch(f"/search/issues?q={encoded}&per_page={limit}{order}")
     except requests.HTTPError as exc:
         return error_message(exc, "search", query), False
 
@@ -260,8 +277,11 @@ def search_result(item):
         "kind": "pr" if "pull_request" in item else "issue",
         "state": frozen_state(item),
     }
+    found["created"] = item["created_at"][:10]
     if "pull_request" in item:
-        found["merged"] = bool(known(item["pull_request"].get("merged_at")))
+        merged_at = known(item["pull_request"].get("merged_at"))
+        found["merged"] = bool(merged_at)
+        found["merged_on"] = merged_at[:10] if merged_at else None
     found["title"] = item["title"]
     found["snippet"] = snippet(item.get("body"))
     return found
