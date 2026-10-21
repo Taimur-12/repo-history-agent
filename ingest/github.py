@@ -11,6 +11,26 @@ TIMEOUT = 30
 ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(ROOT / ".env")
 CACHE_DIR = ROOT / "data" / "cache"
+ARCHIVE_DIR = ROOT / "data" / "cache-archive-20261021"
+AS_OF = "2026-10-16T18:34:00Z"
+
+
+def by_freeze(when):
+    return AS_OF is None or (when is not None and when <= AS_OF)
+
+
+def known(when):
+    return when if when and by_freeze(when) else None
+
+
+def frozen_state(item):
+    if AS_OF is None:
+        return item["state"]
+    return "closed" if known(item.get("closed_at")) else "open"
+
+
+def not_yet(kind, n):
+    return f"{kind} {n} does not exist in {REPO} as of {AS_OF}"
 
 
 def headers():
@@ -63,6 +83,8 @@ def get_timeline(n):
     history = []
     for event in events:
         kind = event.get("event")
+        if not by_freeze(event.get("created_at") or event.get("submitted_at")):
+            continue
 
         if kind == "cross-referenced":
             issue = event["source"]["issue"]
@@ -70,7 +92,7 @@ def get_timeline(n):
                 "repo": issue["repository"]["full_name"],
                 "number": issue["number"],
                 "kind": "pr" if "pull_request" in issue else "issue",
-                "state": issue["state"],
+                "state": frozen_state(issue),
                 "title": issue["title"],
                 "referenced_at": event["created_at"],
             })
@@ -101,16 +123,18 @@ def get_pr(n):
         pr, cache_hit = fetch(f"/repos/{REPO}/pulls/{n}")
     except requests.HTTPError as exc:
         return error_message(exc, "pr", n), False
+    if not by_freeze(pr["created_at"]):
+        return not_yet("pr", n), cache_hit
 
     return {
         "number": pr["number"],
         "title": pr["title"],
         "body": pr["body"],
-        "state": pr["state"],
-        "merged": pr["merged"],
-        "merged_at": pr["merged_at"],
+        "state": frozen_state(pr),
+        "merged": pr["merged"] if AS_OF is None else known(pr["merged_at"]) is not None,
+        "merged_at": known(pr["merged_at"]),
         "created_at": pr["created_at"],
-        "closed_at": pr.get("closed_at"),
+        "closed_at": known(pr.get("closed_at")),
         "author": (pr.get("user") or {}).get("login"),
         "base_branch": pr["base"]["ref"],
         "draft": pr.get("draft"),
@@ -126,15 +150,18 @@ def get_issue(n):
         issue, cache_hit = fetch(f"/repos/{REPO}/issues/{n}")
     except requests.HTTPError as exc:
         return error_message(exc, "issue", n), False
+    if not by_freeze(issue["created_at"]):
+        return not_yet("issue", n), cache_hit
 
+    state = frozen_state(issue)
     return {
         "number": issue["number"],
         "title": issue["title"],
         "body": issue["body"],
-        "state": issue["state"],
-        "state_reason": issue.get("state_reason"),
+        "state": state,
+        "state_reason": issue.get("state_reason") if state == "closed" else None,
         "created_at": issue["created_at"],
-        "closed_at": issue.get("closed_at"),
+        "closed_at": known(issue.get("closed_at")),
         "author": (issue.get("user") or {}).get("login"),
         "labels": [label["name"] for label in issue.get("labels", [])],
         "is_pr": "pull_request" in issue,
@@ -155,6 +182,7 @@ def get_comments(n):
             "body": comment["body"],
         }
         for comment in comments
+        if by_freeze(comment["created_at"])
     ], cache_hit
 
 
@@ -180,7 +208,8 @@ def snippet(body):
 def search(query, kind="any", limit=10):
     if kind not in SEARCH_KINDS:
         return f"unknown kind {kind!r}, use one of: any, pr, issue", False
-    encoded = quote_plus(f"repo:{REPO} {SEARCH_KINDS[kind]}{query}")
+    created = f" created:<{AS_OF}" if AS_OF else ""
+    encoded = quote_plus(f"repo:{REPO} {SEARCH_KINDS[kind]}{query}{created}")
     try:
         result, cache_hit = fetch(f"/search/issues?q={encoded}&per_page={limit}")
     except requests.HTTPError as exc:
@@ -193,10 +222,10 @@ def search_result(item):
     found = {
         "number": item["number"],
         "kind": "pr" if "pull_request" in item else "issue",
-        "state": item["state"],
+        "state": frozen_state(item),
     }
     if "pull_request" in item:
-        found["merged"] = bool(item["pull_request"].get("merged_at"))
+        found["merged"] = bool(known(item["pull_request"].get("merged_at")))
     found["title"] = item["title"]
     found["snippet"] = snippet(item.get("body"))
     return found
@@ -246,6 +275,8 @@ def release_map():
 
     mapping = {}
     for release in releases:
+        if not by_freeze(release.get("published_at")):
+            continue
         package, version = split_tag(release["tag_name"])
         listed, reverted = read_notes(release.get("body") or "")
         for number, title in listed.items():

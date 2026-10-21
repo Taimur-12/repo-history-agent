@@ -4,6 +4,7 @@ import json
 import re
 from concurrent.futures import ThreadPoolExecutor
 from collections import Counter
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -124,6 +125,22 @@ def call_args(call):
     return values
 
 
+FROZEN_FROM = "2026-10-21T00:00:00"
+
+
+@contextmanager
+def repo_as_seen_by(record):
+    from ingest import github
+
+    saved = github.CACHE_DIR, github.AS_OF
+    if (record.get("started_at") or "") < FROZEN_FROM:
+        github.CACHE_DIR, github.AS_OF = github.ARCHIVE_DIR, None
+    try:
+        yield
+    finally:
+        github.CACHE_DIR, github.AS_OF = saved
+
+
 def replay(call):
     from ingest import github
 
@@ -162,8 +179,9 @@ def numbers_in(context):
 
 def score_stages(case, record):
     surfaced, opened, seen = set(), set(), []
-    for call in record.get("calls", []):
-        result = replay(call)
+    with repo_as_seen_by(record):
+        results = [(call, replay(call)) for call in record.get("calls", [])]
+    for call, result in results:
         if result is None:
             continue
         if call["tool"] == "search" and isinstance(result, list):
