@@ -140,7 +140,7 @@
   type: prior-art
   verified_by: 'findings 2026-10-19 "Case set changes"'
   q: "my tool calls a payment API. the call timed out and the graph raised an error. when i invoke it again with the same thread_id to resume, it runs the tool again and the customer gets charged twice. is this a known bug, and has it been fixed in langgraph?"
-  expect_tools_called: [search]
+  expect_tools_called: [search, "get_issue:9185"]
   expect_cites: [9185]
   also_acceptable: [9240, 9239, 8039, 8463, 8464, 8465, 9232, 9265, 3126]
   must_mention: ["idempoten"]
