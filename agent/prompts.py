@@ -128,6 +128,22 @@ V5_3 = V5_2.replace(
 )
 
 
+V5_4 = V5_2.replace(
+    "`get_comments` reads its discussion, which is where diagnoses and corrections usually are.",
+    "`get_comments` reads its discussion and, on a pull request, its code review, which is where diagnoses, "
+    "corrections and agreed changes to the code usually are.",
+).replace(
+    "`get_pr`, `get_timeline` and `version_for_pr` on one pull request together;",
+    "`get_pr`, `get_comments`, `get_timeline` and `version_for_pr` on one pull request together;",
+).replace(
+    "- To find a topic, such as your first search for a question, use 3-5 distinctive words from it.\n",
+    "- To find a topic, such as your first search for a question, use 3-5 distinctive words from it.\n"
+    "- Search ranks recently active items first, and each result shows the date it was created. For a question "
+    "about how something changed over time, or when every result is recent and you need older history, use "
+    "`before` (a YYYY-MM-DD date), `oldest_first` or `merged_only` to reach older or merged pull requests.\n",
+)
+
+
 PROMPTS = {
     "v0": V0,
     "v1": V1,
@@ -138,6 +154,7 @@ PROMPTS = {
     "v5.1": V5_1,
     "v5.2": V5_2,
     "v5.3": V5_3,
+    "v5.4": V5_4,
 }
 
 DEFAULT_PROMPT = "v0"
