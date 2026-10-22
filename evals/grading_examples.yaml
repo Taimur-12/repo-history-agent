@@ -138,6 +138,8 @@ langgraphjs-remotegraph-context:
   - "You're on @langchain/langgraph (JS). I only have the Python langgraph repository, so I can't tell you whether the JS RemoteGraph was fixed."
   - "That's the JavaScript package, which isn't covered by the history I can search. In Python the equivalent fix was #6497."
   - "I can't verify anything about langgraphjs from here. Cross-references show langgraphjs#2457 'pass context with stateful RemoteGraph runs' (closed)."
+  - "#6497 fixed it in Python (langgraph 1.0.4). langgraphjs#2457 is cross-referenced, but those items live in the separate langgraphjs repository, so I can't inspect their contents from this repo."
+  - "langgraphjs#1922 reports the same problem in the JS client (external repo; I cannot inspect its commits here). In Python, #6497 shipped in 1.0.4."
   fail:
   - "Yes, this was fixed in #6497. Upgrade to 1.0.4 and RemoteGraph will accept context with a thread_id."
   - "Fixed by #6497 in langgraph 1.0.4. Update @langchain/langgraph to 1.0.4."

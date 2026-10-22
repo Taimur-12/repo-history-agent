@@ -219,8 +219,8 @@
   expect_cites: []
   also_acceptable: [6497, 5243, 6502]
   must_match_any:
-    - "(langgraphjs|langgraph\\.js|langgraph js|\\bjs\\b|javascript|typescript|@langchain/langgraph)(?:[^.\\n]|\\.(?=\\w)){0,120}\\b(outside|not (in|part of|covered|included|indexed)|(isn't|is not|aren't|are not) (in|part of|covered|included|indexed)|don't have|do not have|(can't|cannot|can not|couldn't|could not) (see|verify|check|confirm|access|search))"
-    - "\\b(outside|not (in|part of|covered by|included in)|don't have|do not have|(can't|cannot|couldn't|could not) (see|verify|check|confirm|access|search))\\b(?:[^.\\n]|\\.(?=\\w)){0,120}(langgraphjs|langgraph\\.js|langgraph js|\\bjs\\b|javascript|typescript|@langchain/langgraph)"
+    - "(langgraphjs|langgraph\\.js|langgraph js|\\bjs\\b|javascript|typescript|@langchain/langgraph)(?:[^.\\n]|\\.(?=\\w)){0,120}\\b(outside|not (in|part of|covered|included|indexed)|(isn't|is not|aren't|are not) (in|part of|covered|included|indexed)|don't have|do not have|(can't|cannot|can not|couldn't|could not) (see|verify|check|confirm|access|search|inspect|read|view))"
+    - "\\b(outside|not (in|part of|covered by|included in)|don't have|do not have|(can't|cannot|couldn't|could not) (see|verify|check|confirm|access|search|inspect|read|view))\\b(?:[^.\\n]|\\.(?=\\w)){0,120}(langgraphjs|langgraph\\.js|langgraph js|\\bjs\\b|javascript|typescript|@langchain/langgraph)"
     - "\\b(only|just) (cover|have|index|search|see)\\w*\\b(?:[^.\\n]|\\.(?=\\w)){0,60}\\bpython\\b"
   should_not:
     - "\\b(upgrad\\w+|update|bump\\w*|install)\\b(?:[^.\\n]|\\.(?=\\d)){0,60}?\\b(to|>=?)\\s*v?1\\.0\\.[4-9]\\b(?![^.\\n]*\\bpython\\b)"
