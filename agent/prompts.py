@@ -144,6 +144,20 @@ V5_4 = V5_2.replace(
 )
 
 
+V5_5 = V5_4.replace(
+    "- `version_for_pr` is the only source for release versions.\n",
+    "- `version_for_pr` is the only source for release versions.\n"
+    "- `file_history` lists the pull requests that changed one source file, oldest first. Give it a file path or a "
+    "code name such as a class, function or setting, and it looks up the file that most likely defines it.\n",
+).replace(
+    "use `before` (a YYYY-MM-DD date), `oldest_first` or `merged_only` to reach older or merged pull requests.\n",
+    "use `before` (a YYYY-MM-DD date), `oldest_first` or `merged_only` to reach older or merged pull requests.\n"
+    "- To find how something changed over time, or which change introduced it, call `file_history` on the code name "
+    "involved. It lists the pull requests that touched that file in date order, including old ones that search ranks low "
+    "or that don't contain your words.\n",
+)
+
+
 PROMPTS = {
     "v0": V0,
     "v1": V1,
@@ -155,6 +169,7 @@ PROMPTS = {
     "v5.2": V5_2,
     "v5.3": V5_3,
     "v5.4": V5_4,
+    "v5.5": V5_5,
 }
 
 DEFAULT_PROMPT = "v0"
