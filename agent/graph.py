@@ -187,7 +187,22 @@ def version_for_pr(number: int) -> str:
     return unwrap(traced_tools.version_for_pr(number))
 
 
-TOOLBOX = [search, get_pr, get_issue, get_timeline, get_comments, version_for_pr]
+@tool(parse_docstring=True)
+def file_history(name: str) -> str:
+    """Get the changes to one source file, oldest first: each pull request's number, date and title.
+
+    `name` is a file path (as in get_pr's `code_changes`) or a code name such as a class, function or setting.
+    A code name is looked up with code search, which returns the first source file that mentions it (usually
+    where it is defined) in `file`, and the next few in `other_files`. Long histories show the oldest 30 and the
+    newest 10 changes. Commits merged without a pull request number show a short `commit` id instead.
+
+    Args:
+        name: A file path such as libs/langgraph/langgraph/graph/state.py, or a code name such as StateGraph.
+    """
+    return unwrap(traced_tools.file_history(name))
+
+
+TOOLBOX = [search, get_pr, get_issue, get_timeline, get_comments, version_for_pr, file_history]
 
 
 class AgentState(TypedDict):

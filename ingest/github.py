@@ -58,12 +58,16 @@ search_lock = threading.Lock()
 last_search = [0.0]
 
 
-def pace_search():
+CODE_SEARCH_INTERVAL = 6.5
+last_code_search = [0.0]
+
+
+def pace_search(last=last_search, interval=SEARCH_INTERVAL):
     with search_lock:
-        wait = last_search[0] + SEARCH_INTERVAL - time.monotonic()
+        wait = last[0] + interval - time.monotonic()
         if wait > 0:
             time.sleep(wait)
-        last_search[0] = time.monotonic()
+        last[0] = time.monotonic()
 
 
 def rate_limit_wait(response):
@@ -81,7 +85,9 @@ def get(url, accept=None):
     if accept:
         sent["Accept"] = accept
     for _ in range(RATE_LIMIT_RETRIES):
-        if url.startswith(f"{API}/search/"):
+        if url.startswith(f"{API}/search/code"):
+            pace_search(last_code_search, CODE_SEARCH_INTERVAL)
+        elif url.startswith(f"{API}/search/"):
             pace_search()
         response = requests.get(url, headers=sent, timeout=TIMEOUT)
         wait = rate_limit_wait(response)
@@ -508,6 +514,76 @@ def release_map():
                     break
             mapping.setdefault(number, []).append(entry)
     return mapping, cache_hit
+
+
+OLDEST_CHANGES = 30
+NEWEST_CHANGES = 10
+OTHER_FILES = 4
+SQUASH_PR = re.compile(r"\(#(\d+)\)")
+MERGE_PR = re.compile(r"^Merge pull request #(\d+)")
+
+
+def change_entry(commit):
+    lines = commit["commit"]["message"].splitlines()
+    title = lines[0]
+    date = commit["commit"]["committer"]["date"][:10]
+    merged = MERGE_PR.match(title)
+    if merged:
+        pr_title = lines[2].strip() if len(lines) > 2 else ""
+        return {"number": int(merged.group(1)), "date": date, "title": pr_title or title}
+    numbers = SQUASH_PR.findall(title)
+    if numbers:
+        return {"number": int(numbers[-1]), "date": date, "title": SQUASH_PR.sub("", title).strip()}
+    if len(commit.get("parents", [])) > 1:
+        return None
+    return {"commit": commit["sha"][:7], "date": date, "title": title}
+
+
+def file_history(name):
+    name = (name or "").strip()
+    if not name:
+        return "give a file path or a code name such as a class or function", False
+    found_by, others, search_hit = None, [], True
+    if "/" in name or name.endswith(".py"):
+        path = name.lstrip("/")
+    else:
+        try:
+            result, search_hit = fetch(f"/search/code?q={quote_plus(f'{name} repo:{REPO} language:python')}&per_page=20")
+        except requests.HTTPError as exc:
+            return error_message(exc, "code search", name), False
+        paths = [item["path"] for item in result.get("items", []) if not NOT_CODE.search(item["path"])]
+        if not paths:
+            return f"no source file in {REPO} mentions {name!r}", search_hit
+        path, others, found_by = paths[0], paths[1:1 + OTHER_FILES], f"the first source file code search returns for {name!r}"
+
+    try:
+        until = f"&until={AS_OF}" if AS_OF else ""
+        commits, cache_hit = fetch(f"/repos/{REPO}/commits?path={quote_plus(path)}{until}&per_page=100")
+    except requests.HTTPError as exc:
+        return error_message(exc, "file", path), False
+
+    changes, numbers = [], set()
+    for commit in reversed(commits):
+        entry = change_entry(commit)
+        if entry is None or entry.get("number") in numbers:
+            continue
+        if "number" in entry:
+            numbers.add(entry["number"])
+        changes.append(entry)
+    if not changes:
+        return f"no changes to {path} before {AS_OF}; check the path (get_pr's code_changes lists file paths)", cache_hit
+
+    result = {"file": path}
+    if found_by:
+        result["found_by"] = found_by
+        result["other_files"] = others
+    if len(changes) <= OLDEST_CHANGES + NEWEST_CHANGES:
+        result["changes"] = changes
+    else:
+        hidden = len(changes) - OLDEST_CHANGES - NEWEST_CHANGES
+        skipped = {"skipped": f"{hidden} change{'s' if hidden > 1 else ''} between these dates"}
+        result["changes"] = changes[:OLDEST_CHANGES] + [skipped] + changes[-NEWEST_CHANGES:]
+    return result, cache_hit and search_hit
 
 
 def version_for_pr(n):

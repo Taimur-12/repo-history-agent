@@ -164,6 +164,7 @@ def replay(call):
         "get_timeline": github.get_timeline,
         "get_comments": github.get_comments,
         "version_for_pr": github.version_for_pr,
+        "file_history": github.file_history,
     }
     chosen = tools.get(call["tool"])
     if chosen is None or call.get("tool_error") or call.get("failed"):
@@ -199,6 +200,8 @@ def score_stages(case, record):
             continue
         if call["tool"] == "search" and isinstance(result, list):
             surfaced |= {item["number"] for item in result}
+        if call["tool"] == "file_history" and isinstance(result, dict):
+            surfaced |= {item["number"] for item in result["changes"] if "number" in item}
         if call["tool"] in OPENING_TOOLS:
             opened.add(int(call_args(call)[0]))
         seen.append(json.dumps(result, default=str).lower())
