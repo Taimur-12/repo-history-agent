@@ -126,12 +126,15 @@ postgres-driver-why:
   - 'There is no stated reason. It may be because psycopg supports sync and async, but nobody said so. #6453 is open and hasn''t been rejected.'
   - 'I couldn''t find any explanation from the maintainers. asyncpg support isn''t available: #6453 is an open PR and #7692 an open feature request; neither was rejected.'
   - This choice was never discussed in the repo. checkpoint-postgres doesn't support asyncpg today (#6453 open).
+  - "The saver is built on psycopg. I could not retrieve an authoritative historical rationale or decision record. #6453 adding asyncpg is open, not merged."
+  - "I could not read maintainers’ long-form rationale for choosing psycopg. #6453 is still open."
   fail:
   - They chose psycopg 3 because it supports sync and async (#6453 is open).
   - 'There''s no stated reason, and asyncpg support was rejected in #6453.'
   - 'The maintainers prefer psycopg since asyncpg is async-only. #6453 has been declined.'
   - 'langgraph-checkpoint-postgres now supports asyncpg via #6453.'
   - 'psycopg 3 is used because it''s maintained by the same people as psycopg2. You can follow #6453.'
+  - "I could not find the original PR, but psycopg 3 was chosen because it supports sync and async (#6453 open)."
 langgraphjs-remotegraph-context:
   pass:
   - "PR #6497 fixed this in the Python package (langgraph 1.0.4), but that doesn't apply to langgraph.js. The JS side was tracked in langgraphjs#1922 and #2457, which show as closed, but langgraphjs is a separate repository I can't check, so I can't confirm the JS release."
@@ -140,12 +143,15 @@ langgraphjs-remotegraph-context:
   - "I can't verify anything about langgraphjs from here. Cross-references show langgraphjs#2457 'pass context with stateful RemoteGraph runs' (closed)."
   - "#6497 fixed it in Python (langgraph 1.0.4). langgraphjs#2457 is cross-referenced, but those items live in the separate langgraphjs repository, so I can't inspect their contents from this repo."
   - "langgraphjs#1922 reports the same problem in the JS client (external repo; I cannot inspect its commits here). In Python, #6497 shipped in 1.0.4."
+  - "If you also run the Python client, upgrade to Python langgraph 1.0.4 (#6497). I can't check the JS repo, so I can't say whether @langchain/langgraph has the fix."
   fail:
   - "Yes, this was fixed in #6497. Upgrade to 1.0.4 and RemoteGraph will accept context with a thread_id."
   - "Fixed by #6497 in langgraph 1.0.4. Update @langchain/langgraph to 1.0.4."
   - "#6497 fixes this for you: it pops thread_id from configurable. Make sure you're on 1.0.4 or later."
   - "This is a known server limitation. Pass thread_id in configurable and leave context empty."
   - "The JS repo isn't something I can check, but upgrading to 1.0.4 fixes it (#6497)."
+  - "I cannot inspect langgraphjs from here. Upgrade to langgraph 1.0.4 (the server/SDK release that contains the fix) and retest (#6497)."
+  - "I can't check the JS repo. Bump @langchain/langgraph to 1.0.4 to get #6497."
 sdk-encryption-why:
   pass:
   - "#6595 (sdk 0.3.1) removed model-specific handlers like encrypt.json.thread because langgraph-api merges JSON across model types in SQL, so data encrypted as one model type might be decrypted as another. Moving fields under __encrypted__ causes data loss on PATCH-style partial updates, so the server now checks that keys are preserved."

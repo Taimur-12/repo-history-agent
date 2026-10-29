@@ -202,7 +202,7 @@
   must_match_any:
     - "\\b(no|isn't any|is no|not any)\\s+(stated |documented |recorded |explicit |public |official )?(reason|rationale|explanation|justification)"
     - "\\b(not|never|n't)\\s+(been\\s+)?(explained|discussed|documented|stated|given|recorded|justified|explain(ed)?)\\b"
-    - "(couldn't|could not|can't|cannot|didn't|did not)\\s+find\\s+(any\\s+|a\\s+)?(stated\\s+|documented\\s+)?(reason|rationale|explanation|discussion|justification)"
+    - "(couldn't|could not|can't|cannot|didn't|did not)\\s+(find|retrieve|locate|read)\\s+(?:[\\w’'-]+\\s+){0,3}?(reason|rationale|explanation|discussion|justification)"
     - "\\b(doesn't|does not|don't|do not)\\s+(say|explain|record|state|document|give)\\b"
   should_not:
     - "\\b(chose|picked|selected|went with|use[sd]?|prefer(red)?)\\s+(psycopg\\w*)(\\s*3)?\\s+(\\w+\\s+){0,4}?(because|since|due to)\\b"
@@ -223,7 +223,7 @@
     - "\\b(outside|not (in|part of|covered by|included in)|don't have|do not have|(can't|cannot|couldn't|could not) (see|verify|check|confirm|access|search|inspect|read|view))\\b(?:[^.\\n]|\\.(?=\\w)){0,120}(langgraphjs|langgraph\\.js|langgraph js|\\bjs\\b|javascript|typescript|@langchain/langgraph)"
     - "\\b(only|just) (cover|have|index|search|see)\\w*\\b(?:[^.\\n]|\\.(?=\\w)){0,60}\\bpython\\b"
   should_not:
-    - "\\b(upgrad\\w+|update|bump\\w*|install)\\b(?:[^.\\n]|\\.(?=\\d)){0,60}?\\b(to|>=?)\\s*v?1\\.0\\.[4-9]\\b(?![^.\\n]*\\bpython\\b)"
+    - "\\b(upgrad\\w+|update|bump\\w*|install)\\b(?:[^.\\n]|\\.(?=\\d)){0,60}?\\b(to|>=?)\\s*(?:(?!python\\b)[\\w@/-]+\\s+){0,2}?v?1\\.0\\.[4-9]\\b(?![^.\\n]*\\bpython\\b)"
     - "(#?6497)\\b(?:[^.\\n]|\\.(?=\\d)){0,60}\\b(fix(es|ed)?|resolv\\w+)\\b(?:[^.\\n]|\\.(?=\\d)){0,30}\\b(it|this) for (you|js|javascript|langgraph\\.?js)\\b"
 
 - id: sdk-encryption-why
