@@ -15,6 +15,7 @@ ARCHIVE_DIR = ROOT / "data" / "cache-archive-20261021"
 AS_OF = "2026-10-16T18:34:00Z"
 MATCHED_TEXT = True
 REVIEW_COMMENTS = True
+PR_REVIEWS = True
 TEXT_MATCH = "application/vnd.github.text-match+json"
 
 
@@ -168,7 +169,7 @@ def get_pr(n):
     if not by_freeze(pr["created_at"]):
         return not_yet("pr", n), cache_hit
 
-    return {
+    result = {
         "number": pr["number"],
         "title": pr["title"],
         "body": pr["body"],
@@ -184,7 +185,34 @@ def get_pr(n):
         "comment_count": pr.get("comments"),
         "review_comment_count": pr.get("review_comments"),
         "merge_commit_sha": pr.get("merge_commit_sha"),
-    }, cache_hit
+    }
+    if not PR_REVIEWS:
+        return result, cache_hit
+
+    try:
+        reviews, reviews_hit = review_comments(n)
+    except requests.HTTPError:
+        reviews, reviews_hit = [], False
+    shown, more = first_reviews(sorted(reviews, key=lambda entry: entry["created_at"] or ""))
+    if shown:
+        result["review_comments"] = shown
+    if more:
+        result["more_review_comments"] = f"{more} more review entries; get_comments shows all of them"
+    return result, cache_hit and reviews_hit
+
+
+PR_REVIEW_CHARS = 2000
+
+
+def first_reviews(entries):
+    shown, used = [], 0
+    for entry in entries:
+        size = len(json.dumps(entry))
+        if shown and used + size > PR_REVIEW_CHARS:
+            break
+        shown.append(entry)
+        used += size
+    return shown, len(entries) - len(shown)
 
 
 def get_issue(n):

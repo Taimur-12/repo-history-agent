@@ -36,6 +36,9 @@ CHECKS = [
     ("#7345: the one comment after the freeze dropped", lambda: len(comments(7345)) == 12),
     ("#8619: review from 10-17 dropped, earlier review kept", lambda: [c["created_at"][:10] for c in comments(8619)
                                                                      if c.get("type") == "review"] == ["2026-08-14"]),
+    ("#8619 in get_pr: review from 10-17 dropped, earlier review kept", lambda: [c["created_at"][:10] for c in
+                                                                     github.get_pr(8619)[0].get("review_comments", [])]
+                                                                    == ["2026-08-14"]),
     ("#9302 shipped only in 1.2.16 (10-16 22:11): no release yet", lambda: isinstance(github.version_for_pr(9302)[0], str)),
     ("#6497 shipped in 1.0.4 (2025): release kept", lambda: any(r["version"] == "1.0.4" for r in github.version_for_pr(6497)[0])),
 ]

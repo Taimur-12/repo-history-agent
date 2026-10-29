@@ -122,7 +122,10 @@ def search(
 
 @tool(parse_docstring=True)
 def get_pr(number: int) -> str:
-    """Get one pull request: title, body, state, merged, dates, author, labels, comment counts and merge commit.
+    """Get one pull request: title, body, state, merged, dates, author, labels, comment counts, merge commit and its first code-review comments.
+
+    `review_comments` holds the oldest review entries, up to about 2000 characters, in the same form as
+    `get_comments` gives them. When there are more, `more_review_comments` says how many.
 
     Args:
         number: The pull request number, without the #.
