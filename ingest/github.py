@@ -16,6 +16,7 @@ AS_OF = "2026-10-16T18:34:00Z"
 MATCHED_TEXT = True
 REVIEW_COMMENTS = True
 PR_REVIEWS = True
+CODE_CHANGES = True
 TEXT_MATCH = "application/vnd.github.text-match+json"
 
 
@@ -231,8 +232,11 @@ def get_pr(n):
         "review_comment_count": pr.get("review_comments"),
         "merge_commit_sha": pr.get("merge_commit_sha"),
     }
-    changes, changes_hit = code_changes(n)
-    result["code_changes"] = changes
+    changes_hit = True
+    if CODE_CHANGES and known(pr.get("closed_at")) is None:
+        result["code_changes"] = "not shown: the pull request was still open, so its code could still change"
+    elif CODE_CHANGES:
+        result["code_changes"], changes_hit = code_changes(n)
     if not PR_REVIEWS:
         return result, cache_hit and changes_hit
 

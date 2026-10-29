@@ -129,7 +129,7 @@ def get_pr(number: int) -> str:
 
     Also returns `code_changes`: each changed source file with its status and line counts, and up to 40 of its
     changed lines shared across the files (`more_lines` counts the ones left out). Tests, docs and config are only
-    listed by name in `other_files`.
+    listed by name in `other_files`. Pull requests that are still open show no code, since it could still change.
 
     Args:
         number: The pull request number, without the #.
