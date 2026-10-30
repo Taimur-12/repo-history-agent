@@ -191,7 +191,8 @@ def version_for_pr(number: int) -> str:
 def file_history(name: str) -> str:
     """Get the changes to one source file, oldest first: each pull request's number, date and title.
 
-    `name` is a file path (as in get_pr's `code_changes`) or a code name such as a class, function or setting.
+    `name` is a file path (as in get_pr's `code_changes`, or its last parts such as graph/state.py), a module name
+    such as langgraph.graph.state, or a code name such as a class, function or setting.
     A code name is looked up with code search, which returns the first source file that mentions it (usually
     where it is defined) in `file`, and the next few in `other_files`. Long histories show the oldest 30 and the
     newest 10 changes. Commits merged without a pull request number show a short `commit` id instead.

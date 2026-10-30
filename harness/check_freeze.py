@@ -46,6 +46,10 @@ CHECKS = [
     ("file history: no change dated after the freeze", lambda: all(c["date"] <= github.AS_OF[:10] for c in
                                                                 github.file_history("libs/cli/langgraph_cli/deploy.py")[0]["changes"]
                                                                 if "date" in c)),
+    ("file added 10-16+ (priority/types.py): path not resolved to it", lambda: isinstance(
+        github.file_history("langgraph_sdk/priority/types.py")[0], str)),
+    ("file added 10-16+: code search result dropped", lambda: github.file_history("PriorityContext")[0]["file"]
+                                                         != "libs/sdk-py/langgraph_sdk/priority/types.py"),
     ("#9302 shipped only in 1.2.16 (10-16 22:11): no release yet", lambda: isinstance(github.version_for_pr(9302)[0], str)),
     ("#6497 shipped in 1.0.4 (2025): release kept", lambda: any(r["version"] == "1.0.4" for r in github.version_for_pr(6497)[0])),
 ]

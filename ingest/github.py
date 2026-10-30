@@ -17,6 +17,7 @@ MATCHED_TEXT = True
 REVIEW_COMMENTS = True
 PR_REVIEWS = True
 CODE_CHANGES = True
+PATH_MATCHING = True
 TEXT_MATCH = "application/vnd.github.text-match+json"
 
 
@@ -97,8 +98,8 @@ def get(url, accept=None):
     return response
 
 
-def fetch(path, accept=None, variant=""):
-    cached = cache_file(path + variant)
+def fetch(path, accept=None, variant="", all_pages=True):
+    cached = cache_file(path + variant + ("" if all_pages else "__first_page"))
 
     if cached.exists():
         return json.loads(cached.read_text()), True
@@ -117,7 +118,7 @@ def fetch(path, accept=None, variant=""):
 
         items.extend(page)
 
-        url = response.links.get("next", {}).get("url")
+        url = response.links.get("next", {}).get("url") if all_pages else None
 
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     cached.write_text(json.dumps(items, indent=2))
@@ -521,6 +522,36 @@ NEWEST_CHANGES = 10
 OTHER_FILES = 4
 SQUASH_PR = re.compile(r"\(#(\d+)\)")
 MERGE_PR = re.compile(r"^Merge pull request #(\d+)")
+MODULE_NAME = re.compile(r"[A-Za-z_]\w*(\.[A-Za-z_]\w*)+")
+MAX_CANDIDATES = 8
+
+
+def freeze_files():
+    until = f"&until={AS_OF}" if AS_OF else ""
+    commits, commits_hit = fetch(f"/repos/{REPO}/commits?per_page=1{until}", all_pages=False)
+    tree, tree_hit = fetch(f"/repos/{REPO}/git/trees/{commits[0]['sha']}?recursive=1")
+    return [entry["path"] for entry in tree["tree"] if entry["type"] == "blob"], commits_hit and tree_hit
+
+
+def files_ending(files, suffix):
+    return [path for path in files if path == suffix or path.endswith("/" + suffix)]
+
+
+def module_files(name, files):
+    parts = name.split(".")
+    while len(parts) > 1:
+        stem = "/".join(parts)
+        found = files_ending(files, stem + ".py") or files_ending(files, stem + "/__init__.py")
+        if found:
+            return found
+        parts = parts[:-1]
+    return []
+
+
+def ambiguous(name, candidates):
+    shown = ", ".join(candidates[:MAX_CANDIDATES])
+    more = f" and {len(candidates) - MAX_CANDIDATES} more" if len(candidates) > MAX_CANDIDATES else ""
+    return f"{len(candidates)} files match {name!r}: {shown}{more}. Give a longer path"
 
 
 def change_entry(commit):
@@ -543,18 +574,38 @@ def file_history(name):
     name = (name or "").strip()
     if not name:
         return "give a file path or a code name such as a class or function", False
-    found_by, others, search_hit = None, [], True
+    files, search_hit = None, True
+    if PATH_MATCHING:
+        try:
+            files, search_hit = freeze_files()
+        except requests.HTTPError as exc:
+            return error_message(exc, "file list", name), False
+    found_by, others = None, []
     if "/" in name or name.endswith(".py"):
-        path = name.lstrip("/")
+        given = name.lstrip("/")
+        candidates = [given]
+        if files is not None and given not in files:
+            candidates = files_ending(files, given) or [given]
+    elif files is not None and MODULE_NAME.fullmatch(name):
+        candidates = module_files(name, files)
+    else:
+        candidates = []
+    if len(candidates) > 1:
+        return ambiguous(name, candidates), search_hit
+    if candidates:
+        path = candidates[0]
     else:
         try:
-            result, search_hit = fetch(f"/search/code?q={quote_plus(f'{name} repo:{REPO} language:python')}&per_page=20")
+            result, code_hit = fetch(f"/search/code?q={quote_plus(f'{name} repo:{REPO} language:python')}&per_page=20")
         except requests.HTTPError as exc:
             return error_message(exc, "code search", name), False
-        paths = [item["path"] for item in result.get("items", []) if not NOT_CODE.search(item["path"])]
+        frozen = set(files or [])
+        paths = [item["path"] for item in result.get("items", [])
+                 if (files is None or item["path"] in frozen) and not NOT_CODE.search(item["path"])]
         if not paths:
-            return f"no source file in {REPO} mentions {name!r}", search_hit
+            return f"no source file in {REPO} mentions {name!r}", search_hit and code_hit
         path, others, found_by = paths[0], paths[1:1 + OTHER_FILES], f"the first source file code search returns for {name!r}"
+        search_hit = search_hit and code_hit
 
     try:
         until = f"&until={AS_OF}" if AS_OF else ""
