@@ -158,6 +158,15 @@ V5_5 = V5_4.replace(
 )
 
 
+V5_6 = V5_5.replace(
+    "and must cite every pull request and issue number you relied on.",
+    "and must cite every pull request and issue number you relied on.\n"
+    "When asked why something was done, give the reason stated by the people who made the change and say where they "
+    "wrote it (#number). If none of them stated a reason, say that no reason was stated, rather than explaining the "
+    "choice by what the code does.",
+)
+
+
 PROMPTS = {
     "v0": V0,
     "v1": V1,
@@ -170,6 +179,7 @@ PROMPTS = {
     "v5.3": V5_3,
     "v5.4": V5_4,
     "v5.5": V5_5,
+    "v5.6": V5_6,
 }
 
 DEFAULT_PROMPT = "v0"
