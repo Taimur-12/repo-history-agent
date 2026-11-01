@@ -19,6 +19,15 @@ def search_numbers(query, kind="any"):
     return [item["number"] for item in github.search(query, kind)[0]]
 
 
+def role_at(login, as_of):
+    saved = github.AS_OF
+    github.AS_OF = as_of
+    try:
+        return github.author_role({"user": {"login": login}})
+    finally:
+        github.AS_OF = saved
+
+
 CHECKS = [
     ("#6574 closed 10-19 as not_planned: shown open", lambda: issue(6574)["state"] == "open"),
     ("#6574: no closed_at or state_reason", lambda: issue(6574)["closed_at"] is None and issue(6574)["state_reason"] is None),
@@ -52,6 +61,12 @@ CHECKS = [
                                                          != "libs/sdk-py/langgraph_sdk/priority/types.py"),
     ("#9302 shipped only in 1.2.16 (10-16 22:11): no release yet", lambda: isinstance(github.version_for_pr(9302)[0], str)),
     ("#6497 shipped in 1.0.4 (2025): release kept", lambda: any(r["version"] == "1.0.4" for r in github.version_for_pr(6497)[0])),
+    ("author first merged 2026-07-30: contributor at the freeze", lambda: role_at("eliornl", github.AS_OF)
+                                                                  .startswith("contributor")),
+    ("same author with the freeze moved to 2026-07-01: outside user", lambda: role_at("eliornl", "2026-07-01T00:00:00Z")
+                                                                     .startswith("outside user")),
+    ("#9333 (merged 10-18) not counted in its author's merges", lambda: role_at("hari-dhanushkodi", github.AS_OF)
+                                                                     == "contributor, 15 merged pull requests"),
 ]
 
 

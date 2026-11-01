@@ -131,6 +131,10 @@ def get_pr(number: int) -> str:
     changed lines shared across the files (`more_lines` counts the ones left out). Tests, docs and config are only
     listed by name in `other_files`. Pull requests that are still open show no code, since it could still change.
 
+    `author_role` says who wrote it: maintainer, contributor (with their number of merged pull requests), outside
+    user or bot. The project's reason for a change is what its author, reviewers or maintainers wrote. What an outside
+    user writes is their own view, not the project's reason.
+
     Args:
         number: The pull request number, without the #.
     """
@@ -140,6 +144,10 @@ def get_pr(number: int) -> str:
 @tool(parse_docstring=True)
 def get_issue(number: int) -> str:
     """Get one issue: title, body, state, state_reason, dates, author and labels.
+
+    `author_role` says who wrote it: maintainer, contributor (with their number of merged pull requests), outside
+    user or bot. The project's reason for a change is what its author, reviewers or maintainers wrote. What an outside
+    user writes is their own view, not the project's reason.
 
     Args:
         number: The issue number, without the #.
@@ -166,6 +174,10 @@ def get_comments(number: int) -> str:
     `type` is "discussion" for the conversation below the item, or "review" for code-review comments on a pull
     request (with the `file` they were left on) and review summaries (with `review_state`). Review comments are
     where reviewers ask for and agree on changes to the code. Each review entry is shortened to 800 characters.
+
+    `author_role` says who wrote each entry: maintainer, contributor (with their number of merged pull requests), outside
+    user or bot. The project's reason for a change is what its author, reviewers or maintainers wrote. What an outside
+    user writes is their own view, not the project's reason.
 
     Args:
         number: The pull request or issue number, without the #.

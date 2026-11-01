@@ -1,4 +1,6 @@
 import json, os, re, threading, time
+from collections import Counter
+from functools import lru_cache
 from urllib.parse import quote_plus
 from pathlib import Path
 from dotenv import load_dotenv
@@ -18,6 +20,7 @@ REVIEW_COMMENTS = True
 PR_REVIEWS = True
 CODE_CHANGES = True
 PATH_MATCHING = True
+AUTHOR_ROLES = True
 TEXT_MATCH = "application/vnd.github.text-match+json"
 
 
@@ -214,6 +217,40 @@ def code_changes(n):
     return {"code": shown, "other_files": other}, cache_hit
 
 
+MAINTAINER_ASSOCIATIONS = {"OWNER", "MEMBER", "COLLABORATOR"}
+
+
+@lru_cache(maxsize=4)
+def merged_counts(cache_dir, as_of):
+    pulls, _ = fetch(f"/repos/{REPO}/pulls?state=all&per_page=100")
+    counts = Counter()
+    for pr in pulls:
+        merged = pr.get("merged_at")
+        if merged and (as_of is None or merged <= as_of):
+            counts[(pr.get("user") or {}).get("login")] += 1
+    return counts
+
+
+def author_role(item):
+    user = item.get("user") or {}
+    if not user.get("login"):
+        return "unknown"
+    if is_bot(user):
+        return "bot"
+    if item.get("author_association") in MAINTAINER_ASSOCIATIONS:
+        return "maintainer"
+    merged = merged_counts(CACHE_DIR, AS_OF)[user.get("login")]
+    if merged == 1:
+        return "contributor, 1 merged pull request"
+    if merged:
+        return f"contributor, {merged} merged pull requests"
+    return "outside user, no merged pull requests"
+
+
+def role_of(item):
+    return {"author_role": author_role(item)} if AUTHOR_ROLES else {}
+
+
 def get_pr(n):
     try:
         pr, cache_hit = fetch(f"/repos/{REPO}/pulls/{n}")
@@ -232,6 +269,7 @@ def get_pr(n):
         "created_at": pr["created_at"],
         "closed_at": known(pr.get("closed_at")),
         "author": (pr.get("user") or {}).get("login"),
+        **role_of(pr),
         "base_branch": pr["base"]["ref"],
         "draft": pr.get("draft"),
         "labels": [label["name"] for label in pr.get("labels", [])],
@@ -291,6 +329,7 @@ def get_issue(n):
         "created_at": issue["created_at"],
         "closed_at": known(issue.get("closed_at")),
         "author": (issue.get("user") or {}).get("login"),
+        **role_of(issue),
         "labels": [label["name"] for label in issue.get("labels", [])],
         "is_pr": "pull_request" in issue,
     }, cache_hit
@@ -306,6 +345,7 @@ def get_comments(n):
         {
             "author": (comment.get("user") or {}).get("login"),
             "author_type": (comment.get("user") or {}).get("type"),
+            **role_of(comment),
             "created_at": comment["created_at"],
             "body": comment["body"],
         }
@@ -349,6 +389,7 @@ def review_comments(n):
             "type": "review",
             "author": (comment.get("user") or {}).get("login"),
             "author_type": (comment.get("user") or {}).get("type"),
+            **role_of(comment),
             "created_at": comment["created_at"],
             "file": comment.get("path"),
             "body": capped(comment.get("body")),
@@ -361,6 +402,7 @@ def review_comments(n):
             "type": "review",
             "author": (review.get("user") or {}).get("login"),
             "author_type": (review.get("user") or {}).get("type"),
+            **role_of(review),
             "created_at": review["submitted_at"],
             "review_state": review.get("state"),
             "body": capped(review.get("body")),

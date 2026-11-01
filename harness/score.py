@@ -131,13 +131,14 @@ REVIEW_COMMENTS_FROM = "2026-10-22T00:00:00"
 PR_REVIEWS_FROM = "2026-10-29T00:00:00"
 CODE_CHANGES_FROM = "2026-10-29T14:40:00"
 PATH_MATCHING_FROM = "2026-10-30T01:50:00"
+AUTHOR_ROLES_FROM = "2026-11-01T02:39:00"
 
 
 @contextmanager
 def repo_as_seen_by(record):
     from ingest import github
 
-    saved = github.CACHE_DIR, github.AS_OF, github.MATCHED_TEXT, github.REVIEW_COMMENTS, github.PR_REVIEWS, github.CODE_CHANGES, github.PATH_MATCHING
+    saved = github.CACHE_DIR, github.AS_OF, github.MATCHED_TEXT, github.REVIEW_COMMENTS, github.PR_REVIEWS, github.CODE_CHANGES, github.PATH_MATCHING, github.AUTHOR_ROLES
     started = record.get("started_at") or ""
     if started < FROZEN_FROM:
         github.CACHE_DIR, github.AS_OF = github.ARCHIVE_DIR, None
@@ -151,10 +152,12 @@ def repo_as_seen_by(record):
         github.CODE_CHANGES = False
     if started < PATH_MATCHING_FROM:
         github.PATH_MATCHING = False
+    if started < AUTHOR_ROLES_FROM:
+        github.AUTHOR_ROLES = False
     try:
         yield
     finally:
-        github.CACHE_DIR, github.AS_OF, github.MATCHED_TEXT, github.REVIEW_COMMENTS, github.PR_REVIEWS, github.CODE_CHANGES, github.PATH_MATCHING = saved
+        github.CACHE_DIR, github.AS_OF, github.MATCHED_TEXT, github.REVIEW_COMMENTS, github.PR_REVIEWS, github.CODE_CHANGES, github.PATH_MATCHING, github.AUTHOR_ROLES = saved
 
 
 def replay(call):
