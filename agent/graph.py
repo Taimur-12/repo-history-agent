@@ -383,7 +383,7 @@ if __name__ == "__main__":
     import sys
 
     question = " ".join(sys.argv[1:]) or "time travel to a subgraph checkpoint with an interrupt gives me the wrong state - is this fixed"
-    result = ask(question)
+    result = ask(question, prompt_version=list(PROMPTS)[-1], reasoning="medium")
     print("=" * 70)
     print(result["answer"])
     print("=" * 70)
